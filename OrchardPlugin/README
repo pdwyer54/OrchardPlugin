@@ -1,0 +1,60 @@
+Potential SDK commmands that may be useful
+
+* atlas-run   -- starts dev instance on localhost
+* atlas-run --jvmargs '-Datlassian.mail.senddisabled=false' -- starts dev instance on localhost and enables email
+* atlas-debug -- same as atlas-run, but allows a debugger to attach at port 5005
+* atlas-cli   -- after atlas-run or atlas-debug, opens a Maven command line window:
+                 - 'pi' reinstalls the plugin into the running product instance
+* atlas-help  -- prints description for all commands in the SDK
+* atlas-create-jira-plugin-module -- Adds modules to the xml file
+* atlas-mvn package -- Updates the enviroment after any updates without restarting JIRA
+* python -m py_compile
+* atlas-package -- runs test and packages the plugin into a .jar in the target file
+* private static final Logger log = LoggerFactory.getLogger($CLASS.class); -- This line of code is for Java mainly and it will write out logs to the terminal. Used for debugging.
+
+
+Full documentation is always available at:
+https://developer.atlassian.com/display/DOCS/Introduction+to+the+Atlassian+Plugin+SDK
+https://developer.atlassian.com/docs/getting-started/set-up-the-atlassian-plugin-sdk-and-build-a-project/create-a-helloworld-plugin-project
+
+Dev Notes:
+I set this up in a way that seperates development from the actual dev environment that is JIRA, here is how you set up for development
+1. Follow the steps from the second link above to set up your JIRA development. Note that you do not need to modify the plugin
+2. Install eclipse: https://orc.orchardsoft.com/pages/viewpage.action?pageId=54073388
+3. Connect eclipse to git -> Window -> Show View -> Other -> Git Repositories
+4. Clone the git repository: https://github.com/pdwyer54/OrchardSoftwareJIRAPlugin
+5. Modify whatever you want to
+6. Commit the changes (Git Staging)
+7. Push the changes into the master (Right-click top piece in Git Repository -> Remote -> Push)
+8. Make sure you have your dev environment running
+9. Run PluginUpdate.pyc
+10. Input your files from eclipse as the source and your files from your plugin folder as the inputs
+11. If your environment is running say yes to the next question.
+12. Quickload will update your changes.
+13. The pom.xml file is your control center for what is being loaded into the plugin as well as version.
+	A lot of the dependencies were by default but I had to add Springwork and I also added the debugging log which is in src/aps
+14. To update the version edit the version in the pom and the atlassian-plugin xmls. 
+	The atlassian-plugin will show up in the manage plugin window and the pom will show up in .jar file we create when making a build
+
+Loading from an existing project:
+1. Open command prompt
+1. Look for OrchardPlugin (when following the steps from the documentation that is what they tell you to create)
+2. atlas-run
+3. After a fairly long wait it should boot up and show you where the JIRA site is hosted: http://localhost:2990/jira
+
+Phil's future dev efforts:
+UI improvements - First one would be a response when large queries are running in JQL. Future efforts would be more intense with customizing tickets, adding per use option for work logged copy
+Update Velocity
+Improve templates to be more modern
+
+
+Versions:
+1.0 - Initial Release
+1.1 - Upgraded to support JIRA 7.8.0
+1.3 - Added Release Notes feature
+1.4 - Release Notes go out to everyone directly
+1.5 - Release Notes dialog/download added
+
+Orchard Software JIRA Plugin
+Written by Phil Dwyer 5/23/17 DEV-376
+	
