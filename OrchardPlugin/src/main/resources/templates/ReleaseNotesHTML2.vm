@@ -1,0 +1,67 @@
+## HTML template for emails
+<html>
+    #set($issuesObject = $issueInfoArray)
+    #set($TypeOrderInt = $issueTypeOrder)
+    #set($IssueName = $IssueTypeName)
+    #set($arrayNum = 0)
+    #set($image = $Image)
+    #set($projectName = $project.getName())
+    #set($URL = $baseURL)
+    #set($orchardLogo = $MainLogo)
+    #set($debugger = $debug)
+    #set($pageBuilderService = $PageBuilderService)
+    ##$pageBuilderService.assembler().resources().requireWebResource("OrchardPlugin:OrchardPlugin-bootstrap");
+    <meta name="decorator" content="atl.admin">
+<IMG SRC=$image alt="Product Logo" WIDTH:"30px" HEIGHT:"30px" align="right"> <br><br>
+    #if ($issuesObject.size() > 0)
+        #if($projectName.contains("Copia"))
+        <p><b><font size="6">Warning: Make sure you have a backup of the client database before you update their system.</font></b></p>
+        #end
+        #foreach($iterator in $TypeOrderInt) ## Make a table for each issue type
+            #set($IssueType = $IssueName.get($arrayNum))
+            <br>
+
+            <table class="table table-striped table-bordered">
+            <thead>
+                <style>
+                    th {
+                        text-align: center;
+                    }
+                </style>
+            </thead>
+            <tbody>
+            <h2>$IssueType</h2>
+            <table cellpadding="5" style="width:100%">
+                <tr>
+                    <th>Issue #</th>
+                    <th>Release Note</th>
+                    <th>Fixed By</th>
+                    <th>Client</th>
+                </tr>
+                #set($rowCount = 1)
+                #foreach($issue in $issuesObject)
+                    #set($issueType = $issue.getIssueType())
+                    #set($issueText = $issue.getIssueText())
+                    #set($issueNotes = $issue.getReleaseNotes())
+                    #set($issueFixed = $issue.getFixedBy())
+                    #set($issueClient = $issue.getClientName())
+                    #if($IssueType.contains($issueType))
+                        <td align="center" style="padding-left:5px;padding-right:5px;" nowrap><a href ="$URL/browse/$issueText">$issueText</a></td>
+                        <td align="left">$issueNotes</td>
+                        <td align="center">$issueFixed</td>
+                        <td align="center">$issueClient</td>
+                        </tr>
+                        #set($rowCount = $rowCount + 1)
+                    #end
+                #end
+            </table>
+            </tbody>
+                #set($arrayNum = $arrayNum+1)
+        #end
+    #end
+<br> <br> <br>
+Thank you, <br>
+    $projectName Development Team <br>
+Orchard Software Corporation <br>
+<IMG SRC=$orchardLogo alt="Orchard Logo" WIDTH:"100px" HEIGHT:"100px">
+</html>

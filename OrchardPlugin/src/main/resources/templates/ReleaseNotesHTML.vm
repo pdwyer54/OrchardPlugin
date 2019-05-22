@@ -1,0 +1,71 @@
+## HTML template for emails
+<html>
+#set($issuesObject = $issueInfoArray)
+#set($TypeOrderInt = $issueTypeOrder)
+#set($IssueName = $IssueTypeName)
+#set($arrayNum = 0)
+#set($image = $Image)
+#set($projectName = $project.getName())
+#set($URL = $baseURL)
+#set($orchardLogo = $MainLogo)
+#set($flavorText = $FlavorText)
+<IMG SRC=$image alt="Product Logo" WIDTH:"30px" HEIGHT:"30px" align="right"> <br><br>
+#if ($issuesObject.size() > 0)
+	#if($flavorText != "")
+		<p><b><font size="5">$flavorText</font></b></p>
+	#end
+	#foreach($iterator in $TypeOrderInt) ## Make a table for each issue type
+	#set($IssueType = $IssueName.get($arrayNum))
+	<br>
+	<head>
+	<style>
+	table, th, td {
+    border: 1px solid black;
+	}
+	th {
+    text-align: center;
+	}
+	</style>
+	</head>
+	<body>
+	<h2>$IssueType</h2>
+		<table cellpadding="5" style="width:100%">
+		<tr>
+		<th>Issue #</th>
+		<th>Release Note</th>
+		<th>Fixed By</th>
+		<th>Client</th>
+		</tr>
+		#set($rowCount = 1)
+		#foreach($issue in $issuesObject)
+		#if ($rowCount % 2 == 0)
+			#set ($bgcolor = "")
+		#else
+			#set ($bgcolor = "#D3D3D3")
+		#end
+		#set($issueType = $issue.getIssueType())
+		#set($issueText = $issue.getIssueText())
+		#set($issueNotes = $issue.getReleaseNotes())
+		#set($issueFixed = $issue.getFixedBy())
+		#set($issueClient = $issue.getClientName())
+		#if($IssueType.contains($issueType))
+			<td align="center" style="padding-left:5px;padding-right:5px;" nowrap bgcolor="$bgcolor"><a href ="$URL/browse/$issueText">$issueText</a></td>
+			<td align="left" bgcolor="$bgcolor">$issueNotes</td>
+			<td align="center" bgcolor="$bgcolor">$issueFixed</td>
+			<td align="center" bgcolor="$bgcolor">$issueClient</td>
+          </tr>
+          #set($rowCount = $rowCount + 1)
+		#end
+	#end
+		</table>
+		
+	</body>
+	#set($arrayNum = $arrayNum+1)
+	#end
+#end
+	<br> <br> <br>
+	Thank you, <br>
+	$projectName Development Team <br>
+	Orchard Software Corporation <br>
+	<IMG SRC=$orchardLogo alt="Orchard Logo" WIDTH:"100px" HEIGHT:"100px">
+</html>
