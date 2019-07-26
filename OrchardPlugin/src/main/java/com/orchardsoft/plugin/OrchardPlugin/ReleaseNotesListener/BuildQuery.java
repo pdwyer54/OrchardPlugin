@@ -23,7 +23,7 @@ public class BuildQuery {
 
 		final JqlQueryBuilder builder = JqlQueryBuilder.newBuilder();
 
-		if(debugger.isTest) {
+		if(debugger.isSingleTestSystem) {
 			// Test system query
 			// Query the project and component only
 

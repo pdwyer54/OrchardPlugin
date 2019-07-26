@@ -2,6 +2,7 @@
 // PRD 11/26/18 DEV-542
 
 
+// This function will check the url for the project key and return said key
 function getProject() {
     var name = "";
 
@@ -34,10 +35,16 @@ function getProject() {
     return name;
 }
 
+// This function will check if we are on the right screen or if we don't want to allow it
 function checkProject() {
     var isCorrectProject = false;
+    var bContinue = false;
 
-    if ((window.location.href.indexOf("administer-versions") > -1)) {
+    if (window.location.href.indexOf("selectedItem=com.atlassian.jira.jira-projects-plugin") > -1) {
+        bContinue = (window.location.href.indexOf("release-page") > -1);
+    }
+
+    if ((window.location.href.indexOf("administer-versions") > -1) || (bContinue)) {
         if (getProject()!=""){
             isCorrectProject = true;
         }
@@ -45,6 +52,8 @@ function checkProject() {
     return isCorrectProject;
 }
 
+// This takes the version name and project to get the ID. The ID is needed to determine what version we are changing. This is only needed
+// if we don't have a drop down box or if we
 function getVersionID(version,projectKey) {
 
     var resultData;
@@ -54,7 +63,7 @@ function getVersionID(version,projectKey) {
         dataType : 'json',
         contentType : "application/json;",
         async : false,
-        url : AJS.params.baseURL+"/rest/api/2/project/"+projectKey+"/version/?maxResults=100&orderBy=-releaseDate",
+        url : AJS.params.baseURL+"/rest/api/2/project/"+projectKey+"/version/?maxResults=1000&orderBy=-releaseDate",
         context : document.body,
         success : function(data) {
             resultData = data;
@@ -82,10 +91,15 @@ function getVersionID(version,projectKey) {
 }
 
 
-function Release(oldVersion,newVersion,project) {
-    var versionID = getVersionID(oldVersion, project);
+function Release(oldVersion,newVersion,project,versionID) {
+
+    if (versionID == "") {
+        versionID = getVersionID(oldVersion, project);
+    }
 
     if (versionID != "") {
+        var hotfixCheckbox = document.getElementById("isHotfix").checked;
+
     jQuery.ajax({
         type: "PUT",
         dataType: "json",
@@ -106,6 +120,32 @@ function Release(oldVersion,newVersion,project) {
             console.log(XMLHttpRequest.responseText);
         }
     });
+
+        if (hotfixCheckbox){
+
+            jQuery.ajax({
+                type: "POST",
+                dataType: "json",
+                contentType: "application/json;",
+                async: false,
+                url: AJS.params.baseURL + "/rest/api/2/version",
+                data: JSON.stringify({
+                    "name": oldVersion,
+                    "released": false,
+                    "archived": false,
+                    "project": project
+
+                }),
+                context: document.body,
+                success: function (data) {
+                    returnData = data;
+                },
+                error: function(XMLHttpRequest) {
+                    console.log(XMLHttpRequest.responseText);
+                }
+            });
+        }
+
 }
 }
 
@@ -167,10 +207,43 @@ AJS.toInit(function(jQuery){
             isCtrl = false;
             isShift = false;
 
+            var projectName = getProject();
+            var resultData;
+            var versionID = "";
+            var availableArray = [];
+            jQuery.ajax({
+                type : 'GET',
+                dataType : 'json',
+                contentType : "application/json;",
+                async : false,
+                url : AJS.params.baseURL+"/rest/api/2/project/"+projectName+"/version/?maxResults=1000&orderBy=-releaseDate",
+                context : document.body,
+                success : function(data) {
+                    resultData = data;
+                },
+                error: function(XMLHttpRequest) {
+                    console.log(XMLHttpRequest.responseText);
+                }
+            });
+
+            if (resultData != null) {
+
+                var searchField = "released";
+
+                for (var i = 0; i < resultData.values.length; i++) {
+                    if (resultData.values[i][searchField] == false) {
+                        var item = [resultData.values[i]["name"],resultData.values[i]["id"]];
+                        availableArray.push(item);
+                    }
+                }
+            }
+            availableArray.sort();
+
+
             // Standard sizes are 400, 600, 800 and 960 pixels wide
             var dialog = new AJS.Dialog({
-                width: 215,
-                height: 250,
+                width: 250,
+                height: 300,
                 id: "release-dialog",
                 closeOnOutsideClick: true
             });
@@ -178,7 +251,17 @@ AJS.toInit(function(jQuery){
             dialog.addHeader("Trigger Release");
 
             dialog.addButton("Release", function (dialog) {
-                Release(document.getElementById('releaseName').value,document.getElementById('newReleaseName').value,getProject());
+                var oldversionValue = "";
+                var oldversionID = "";
+                var e = document.getElementById('nameList');
+                if (e != null){
+                    oldversionValue = availableArray[e.selectedIndex][0];
+                    oldversionID = availableArray[e.selectedIndex][1];
+                } else{
+                    oldversionValue = document.getElementById('releaseName').value;
+                }
+
+                Release(oldversionValue,document.getElementById('newReleaseName').value,projectName,oldversionID);
                 dialog.hide();
                 location.reload();
             });
@@ -187,7 +270,41 @@ AJS.toInit(function(jQuery){
                 dialog.hide();
             }, "#");
 
-            dialog.addPanel("SinglePanel", "<p>Version to Release: <input type='text' name='releaseName' id='releaseName'/><br/><br/>New Release Name: <input type='text' name='newReleaseName' id='newReleaseName'/></p>", "panelbody");
+
+            if(availableArray.length > 0) {
+                var nameEl = document.getElementById("nameList");
+                if (nameEl != null) {
+                    nameEl.remove();
+                }
+                var newNameEl = document.getElementById('newReleaseName');
+                if (newNameEl != null){
+                    newNameEl.remove();
+                }
+
+                var hotfixEl = document.getElementById("isHotfix");
+                if (hotfixEl != null){
+                    hotfixEl.remove();
+                }
+
+                dialog.addPanel("SinglePanel", "<p>Version to Release:" +
+                    " <select id='nameList'></select><br/><br/>" +
+                    "New Release Name: <input type='text' name='newReleaseName' id='newReleaseName'/><br/><br/>" +
+                    "<input type='checkbox' id='isHotfix' name='isHotfix' value='Hotfix'> Create new hotfix?</p>", "panelbody");
+
+                var select = document.getElementById("nameList");
+                for (var i=0; i < availableArray.length;i++){
+                    var opt = availableArray[i][0];
+                    var el = document.createElement("option");
+                    el.textContent = opt;
+                    el.value = opt;
+                    select.appendChild(el);
+                }
+            } else {
+                dialog.addPanel("SinglePanel", "<p>Version to Release:" +
+                    " <input type='text' name='releaseName' id='releaseName'/><br/><br/>" +
+                    "New Release Name: <input type='text' name='newReleaseName' id='newReleaseName'/><br/><br/>" +
+                    "<input type='checkbox' name='isHotfix' value='Hotfix'> Hotfix?</p>", "panelbody");
+            }
 
             e.preventDefault();
             dialog.show();

@@ -11,8 +11,9 @@ import org.slf4j.LoggerFactory;
 public class Debug{
 
     private static final Logger log = LoggerFactory.getLogger(Debug.class);
-    private static final boolean canLog = true; // Set this to false in prod systems
+    private static final boolean canLog = false; // Set this to false in prod systems
     public static boolean isTest = false; // Set this to false in prod systems as well
+    public static boolean isSingleTestSystem = false; // Set this if we are in the standalone server we set up
 
     public Debug() {
 

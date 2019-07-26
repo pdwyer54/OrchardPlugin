@@ -24,8 +24,7 @@ import org.springframework.stereotype.Component;
 import com.orchardsoft.plugin.OrchardPlugin.Debug;
 import com.atlassian.jira.event.issue.IssueEvent;
 import com.atlassian.jira.event.type.EventType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener.DownloadHelper;
 
 
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import java.util.List;
 @Component
 public class TriggerRelease implements InitializingBean, DisposableBean {
 
-    private static final Logger log = LoggerFactory.getLogger(TriggerRelease.class);
     private String className = this.getClass().getSimpleName();
     public static boolean isRW;
     private static Debug debugger = new Debug();
@@ -69,101 +67,9 @@ public class TriggerRelease implements InitializingBean, DisposableBean {
     @EventListener
     public void onVersionReleased(final VersionReleaseEvent event) {
 
-            if (event.getVersion() != null) {
-                ProjectHelper projectHelper = new ProjectHelper();
-                BuildQuery queryBuilder = new BuildQuery();
-                final ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(); // get current user
-                Version version = event.getVersion(); // Get the version being released
-                VersionManager versionManager = ComponentAccessor.getVersionManager();
-                Project project = version.getProject();
+            DownloadHelper run = new DownloadHelper();
+            String junk = run.versionRelease(event.getVersion(),"","");
 
-                // Check if we are in a test system, if we aren't we need to make sure this is a project we actually can run this on.
-                // If it is a test system always run it
-                boolean Continue = false;
-                if (!(debugger.isTest)) {
-                    Continue = checkProject(version.getProject().getKey());
-                } else {
-                    Continue = true;
-                }
-
-                if (Continue) {
-                    debugger.logdebug(version.getName(), className);
-
-
-                    // Getting all the items
-                    Query query;
-                    SearchService searchService = ComponentAccessor.getComponent(SearchService.class);
-                    SearchResults searchResults;
-                    Collection<ProjectComponent> componentList = projectHelper.getComponentByProject(project); // Component stuff that will eventually be needed for Copia, Trellis and Sequoia
-                    Collection<IssueType> issueTypeList = projectHelper.getIssueTypeByProject(project); // This list is sorted in a way already, however it's sorted in the project scheme
-                    List<Issue> issuesInList = new ArrayList<>();
-                    ArrayList<Issue> allIssues = new ArrayList<>();
-                    //for (ProjectComponent component : componentList) { // Run a query for each component, this is for Copia eventually
-                    for (IssueType issueType : issueTypeList) {
-                        query = queryBuilder.JQLBuilderBuild(project.getName(), version.getName(), "", issueType);
-
-                        MessageSet errorMessages = searchService.validateQuery(user, query);
-                        if (errorMessages.hasAnyErrors()) {
-                            // Add error logging
-                            debugger.logdebug("Failure in Query", className);
-                        } else {
-                            try {
-                                searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
-                                issuesInList = searchResults.getIssues();
-                                // debugger.logdebug(component.getName(), className);
-                                debugger.logdebug(Integer.toString(issuesInList.size()), className);
-
-                                if (!issuesInList.isEmpty()) {
-                                    int markedChange = allIssues.size();
-                                    allIssues.addAll(issuesInList);
-                                }
-
-                            } catch (Exception e) {
-                                debugger.logdebug("Line 134", className);
-                                debugger.logdebug(e.getMessage(), className);
-                            }
-                        }
-                    }
-
-
-                    //}
-                    // Run the blank component last
-                    //query = queryBuilder.JQLBuilderBuild(project.getName(),version.getName(),"",issueTypeList);
-                    //MessageSet errorMessages = searchService.validateQuery(user, query);
-                    //if (errorMessages.hasAnyErrors()) {
-                    // Add error logging
-                    //	debugger.logdebug("Failure in Query",className);
-                    //} else {
-                    //	try {
-                    //		searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
-                    //		issuesInList = searchResults.getIssues();
-                    //		debugger.logdebug(Integer.toString(issuesInList.size()),className);
-
-                    //		if (!issuesInList.isEmpty()) {
-                    //			allIssues.addAll(issuesInList);
-                    //		}
-
-                    //	} catch (Exception e){
-                    //		debugger.logdebug("Line 159",className);
-                    //		debugger.logdebug(e.getMessage(),className);
-                    //	}
-                    //}
-
-                    // Build template
-                    debugger.logdebug("Attempting Build Template", className);
-                    BuildTemplate buildTemplate = new BuildTemplate();
-                    buildTemplate.getTemplate(allIssues, project, version);
-                }
-
-            }
-
-    }
-
-    private boolean checkProject(String projectKey) { // Check the project to make sure we should even be doing this
-        ProjectHelper projectHelper = new ProjectHelper();
-        ArrayList<String> projectList=new ArrayList<String>();
-        projectHelper.buildProjectList(projectList);
-        return projectList.contains(projectKey);
     }
 
 }

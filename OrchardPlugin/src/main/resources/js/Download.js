@@ -34,6 +34,7 @@ function getProject() {
     return name;
 }
 
+// This function will check if we are on the right screen or if we don't want to allow it
 function checkProject() {
     var isCorrectProject = false;
     if (getProject()!=""){
@@ -46,10 +47,45 @@ function checkProject() {
     return isCorrectProject;
 }
 
-function getDescription(versionID,projectKey) {
+function getInfo(strVersion){
+    var text = '';
+    $.ajax({
+        type : "GET",
+        url : AJS.params.baseURL+"/plugins/servlet/downloadservlet",
+        async : false,
+        data : "version="+strVersion+"&project="+getProject(),
+        success : function(data) {
+            text = data;
+        },
+        error: function(XMLHttpRequest) {
+            console.log(XMLHttpRequest.responseText);
+        }
+    });
+
+    return text;
+
+}
+
+function sendDownload(filename, version) {
+
+    var text = getInfo(version);
+
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
+function getVersionName(versionID) {
+    var version = '';
 
     var resultData;
-    var oldDescription = "";
     jQuery.ajax({
         type : 'GET',
         dataType : 'json',
@@ -66,77 +102,11 @@ function getDescription(versionID,projectKey) {
     });
 
     if (resultData != null) {
-        oldDescription = resultData['description'];
+        version = resultData['name'];
     }
-    return oldDescription;
-
-}
 
 
-function Release(VersionID,project) {
-    var versionID = VersionID;
-    var oldDescription = getDescription(versionID,project);
-
-    if (versionID != "") {
-        jQuery.ajax({
-            type: "PUT",
-            dataType: "json",
-            contentType: "application/json;",
-            async: false,
-            url: AJS.params.baseURL + "/rest/api/2/version/" + versionID,
-            data: JSON.stringify({
-                "released": false,
-                "description": "download"
-            }),
-            context: document.body,
-            success: function (data) {
-                returnData = data;
-            },
-            error: function(XMLHttpRequest) {
-                console.log(XMLHttpRequest.responseText);
-            }
-        });
-
-
-
-        jQuery.ajax({
-            type: "PUT",
-            dataType: "json",
-            contentType: "application/json;",
-            async: false,
-            url: AJS.params.baseURL + "/rest/api/2/version/" + versionID,
-            data: JSON.stringify({
-                "released": true,
-            }),
-            context: document.body,
-            success: function (data) {
-                returnData = data;
-            },
-            error: function(XMLHttpRequest) {
-                console.log(XMLHttpRequest.responseText);
-            }
-        });
-
-
-
-        jQuery.ajax({
-            type: "PUT",
-            dataType: "json",
-            contentType: "application/json;",
-            async: false,
-            url: AJS.params.baseURL + "/rest/api/2/version/" + versionID,
-            data: JSON.stringify({
-                "description": oldDescription
-            }),
-            context: document.body,
-            success: function (data) {
-                returnData = data;
-            },
-            error: function(XMLHttpRequest) {
-                console.log(XMLHttpRequest.responseText);
-            }
-        });
-    }
+    return version;
 }
 
 AJS.toInit(function(jQuery){
@@ -152,9 +122,9 @@ AJS.toInit(function(jQuery){
         if (e.which == 16){
             isShift = true;
         }
-
-        if (isCtrl && isShift && e.which == 76 && checkProject()){
-            console.log("Triggering ctrl-shift-e");
+            // ctrl-shift-.
+        if (isCtrl && isShift && e.which == 190 && checkProject()){
+            console.log("Triggering ctrl-shift-.");
             isCtrl = false;
             isShift = false;
 
@@ -168,9 +138,12 @@ AJS.toInit(function(jQuery){
 
             dialog.show();
             var pathArray = window.location.pathname.split('/');
-            Release(pathArray[pathArray.length - 1], getProject());
+            var strVersion = getVersionName(pathArray[pathArray.length - 1]);
+
+            sendDownload(getProject()+" "+strVersion+".txt", strVersion);
+
+
             dialog.hide();
-            location.reload();
         }
 
     })

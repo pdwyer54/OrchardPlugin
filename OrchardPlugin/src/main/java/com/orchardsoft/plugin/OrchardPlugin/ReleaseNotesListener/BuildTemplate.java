@@ -27,7 +27,7 @@ public class BuildTemplate {
     private String className = this.getClass().getSimpleName();
 
     @SuppressWarnings("InjectedReferences")
-    public void getTemplate(ArrayList<Issue> IssueList, Project project, Version version) {
+    public String getTemplate(ArrayList<Issue> IssueList, Project project, Version version, String template) {
         final Map<String, Object> body = new HashMap<String, Object>(); // Final map to put pass into the template renderer so we have the info when building the template
         CustomFieldManager customFieldManager = ComponentAccessor.getCustomFieldManager();
         ArrayList<TemplateObject> templateObjectArrayList = new ArrayList<TemplateObject>();
@@ -153,7 +153,7 @@ public class BuildTemplate {
 
         ApplicationProperties ap = ComponentAccessor.getApplicationProperties();
         String baseUrl = ap.getString(APKeys.JIRA_BASEURL);
-        String orchardLogo = baseUrl+"/download/resources/OrchardPlugin:OrchardPlugin-resources/images/Main.png"; // Main logo for bottom of email
+        String orchardLogo = baseUrl+"/download/resources/com.orchardsoft.plugin.OrchardPlugin:OrchardPlugin-resources/images/Main.png"; // Main logo for bottom of email
         debugger.logdebug("Adding Flavor Text",className);
         String flavorText = getFlavorText(project,version);
 
@@ -184,50 +184,23 @@ public class BuildTemplate {
 
         // New way
         try {
-            renderedText = vm.getEncodedBody("templates/", "ReleaseNotesHTML.vm", baseUrl, webworkEncoding, body);
+            renderedText = vm.getEncodedBody("templates/", template, baseUrl, webworkEncoding, body);
             debugger.logdebug(renderedText,className);
         } catch(Exception e) {
             debugger.logdebug("Failed to render",className);
             debugger.logdebug(e.toString(),className);
         }
 
-        // For now we are going to send the email to whoever clicked release, this way we can somewhat screen the email before sending to to almost all the company
-        JiraAuthenticationContext authContext = ComponentAccessor.getJiraAuthenticationContext();
-        ApplicationUser loggedInUser = authContext.getLoggedInUser();
-
-        // Build email
-        Boolean bSendEmail = true;
-        Boolean bDownload = false;
-        SendEmail sendEmail = new SendEmail();
-        String emailList = sendEmail.gatherEmailList(project,"pdwyer"); // Get the list, right now it's just returning the user who builds the version
-        if(version.getName().contains("Next")){ // Error out if it has next in it
-            emailList = sendEmail.getUserEmail(loggedInUser.getUsername());
-        }
-
-        if (versionDescription.contains("DNS")){ // If we added DNS to the description, don't send the email
-            bSendEmail = false;
-        } else if(versionDescription.contains("download")){ // If we just want to download we will slap download in the description
-            bDownload = true;
-            bSendEmail = false;
-        }
-        debugger.logdebug(emailList,className);
-        String subject = sendEmail.setSubject(project.getName(),version.getName(),version); // Build the subject title
-        debugger.logdebug(subject,className);
+        return renderedText;
 
 
-        // Send the email
-        if(bSendEmail) {
-            sendEmail.sendTheEmail(emailList, subject, renderedText);
-        }
-        if(bDownload) {
-            //sendEmail.downloadTheHTML(renderedText, version.getName());
-        }
+
     }
 
 
     private String getProjectLogoURL(String projectKey, String baseURL, Version version) {
         // Method to get the correct icon for the project
-        String path = baseURL+"/download/resources/OrchardPlugin:OrchardPlugin-resources/images/";
+        String path = baseURL+"/download/resources/com.orchardsoft.plugin.OrchardPlugin:OrchardPlugin-resources/images/";
 
         String versionDescription = "";
         if(version.getDescription() != null){

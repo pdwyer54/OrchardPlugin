@@ -37,13 +37,10 @@ public class SendEmail {
         if(debugger.isTest) {
             projectKey = "Self";
         }
-        else {
-        		projectKey = "Self";
-        	}
 
 
         if (projectKey.contains("HARVEST")) {
-           // emailList = getUserEmail("orchard-all");
+           emailList = getUserEmail("orchard-all");
 
         } else if (projectKey.contains("COPIA")) {
             emailList = getUserEmail("orchard-all");
@@ -97,9 +94,6 @@ public class SendEmail {
         } else { // Debugging
             emailList = emailList + getUserEmail("pdwyer") +",";
             emailList = emailList + getUserEmail("dwacker") + ",";
-            emailList = emailList + getUserEmail("asheingold") + ",";
-            emailList = emailList + getUserEmail("senzor");
-
         }
 
 
@@ -194,67 +188,11 @@ public class SendEmail {
 
     }
 
-    /**
-     public void downloadTheHTML(String data,String version) throws ServletException, IOException{
-     debugger.logdebug("Calling fileWriter",className);
-     FileWriter fileWriter = null;
-     debugger.logdebug("Calling new File",className);
-     File file = new File(version + ".html");
-     try {
-     debugger.logdebug("Creating new filewriter",className);
-     fileWriter = new FileWriter(file);
-     fileWriter.write(data);
+     public void downloadTheHTML(String data,String version){
 
-     } catch (Exception e) {
-     StringWriter sw = new StringWriter();
-     e.printStackTrace(new PrintWriter(sw));
-     debugger.logdebug("There was an error in creating the file: "+sw.toString(),className);
-     } finally {
-     try {
-     if (fileWriter != null) {
-     fileWriter.flush();
-     fileWriter.close();
-     }
-     } catch (IOException e) {
-     StringWriter sw = new StringWriter();
-     e.printStackTrace(new PrintWriter(sw));
-     debugger.logdebug("There was an error in closing the file: "+sw.toString(),className);
-     }
-     }
-
-     debugger.logdebug(file.toString(),className);
-
-     debugger.logdebug("Declaring HttpServletRequest and HttpServletResponse",className);
-     HttpServletRequest request = null;
-     HttpServletResponse response = null;
-
-     debugger.logdebug("Setting response",className);
-     response.setContentType("text/html");
-     response.setContentLength((int) file.length());
-     response.setHeader( "Content-Disposition", String.format("attachment; filename=\"%s\"", file.getName()));
-     debugger.logdebug("Response set",className);
-     try {
-     OutputStream out = response.getOutputStream();
-     debugger.logdebug("Got Outputstream",className);
-     FileInputStream in = new FileInputStream(file);
-     debugger.logdebug("Got new FileInputStream(file)",className);
-     byte[] buffer = new byte[4096];
-     int length;
-     while ((length = in.read(buffer)) > 0) {
-     debugger.logdebug("Writing the out",className);
-     out.write(buffer, 0, length);
-     }
-     in.close();
-     out.flush();
-     } catch (IOException e) {
-     StringWriter sw = new StringWriter();
-     e.printStackTrace(new PrintWriter(sw));
-     debugger.logdebug("There was an error in sending the file: "+sw.toString(),className);
-     }
 
 
      }
-     **/
 
     // If email is sent to this address no matter what the project is, it should go
     // here
