@@ -35,7 +35,6 @@ import java.util.List;
 public class TriggerRelease implements InitializingBean, DisposableBean {
 
     private String className = this.getClass().getSimpleName();
-    public static boolean isRW;
     private static Debug debugger = new Debug();
 
     @JiraImport
@@ -67,6 +66,7 @@ public class TriggerRelease implements InitializingBean, DisposableBean {
     @EventListener
     public void onVersionReleased(final VersionReleaseEvent event) {
 
+            // Runs the release notes and sends where it needs to go.
             DownloadHelper run = new DownloadHelper();
             String junk = run.versionRelease(event.getVersion(),"","");
 

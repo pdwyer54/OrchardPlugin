@@ -48,6 +48,9 @@ function checkProject() {
 }
 
 function getInfo(strVersion){
+    // This calls DownloadServlet.java on the server
+    // This only have a doGet statement right now so ajax can only use the get command
+
     var text = '';
     $.ajax({
         type : "GET",
@@ -68,6 +71,7 @@ function getInfo(strVersion){
 
 function sendDownload(filename, version) {
 
+    // This method creates an element that then is used to send a download to the user
     var text = getInfo(version);
 
     var element = document.createElement('a');
@@ -83,6 +87,8 @@ function sendDownload(filename, version) {
 }
 
 function getVersionName(versionID) {
+
+    // We will have the version ID so we need to get the version data so we can have the name of the version itself
     var version = '';
 
     var resultData;
@@ -128,22 +134,11 @@ AJS.toInit(function(jQuery){
             isCtrl = false;
             isShift = false;
 
-            var dialog = new AJS.Dialog({
-                width: 300,
-                height: 50,
-                id: "dialog-download",
-                closeOnOutsideClick: false
-            });
-            dialog.addHeader("Downloading Release Notes");
-
-            dialog.show();
-            var pathArray = window.location.pathname.split('/');
+            var pathArray = window.location.pathname.split('/'); // The last piece is the version Id number so
             var strVersion = getVersionName(pathArray[pathArray.length - 1]);
 
             sendDownload(getProject()+" "+strVersion+".txt", strVersion);
 
-
-            dialog.hide();
         }
 
     })

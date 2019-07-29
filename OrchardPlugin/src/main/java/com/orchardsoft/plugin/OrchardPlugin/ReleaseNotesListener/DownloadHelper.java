@@ -26,6 +26,7 @@ public class DownloadHelper {
     private String className = this.getClass().getSimpleName();
     private static Debug debugger = new Debug();
 
+    // This method is the actual
     public String versionRelease(Version version,String strVersion, String projectKey){
 
         debugger.logdebug("Running versionRelease", className);
@@ -33,7 +34,8 @@ public class DownloadHelper {
         // What are we doing?
         Boolean bSendEmail = true;
 
-        // If we have these things then we are downloading
+        // If we have these things and the first parameter is null then we are downloading
+        // That means we need to set the version first
         if (version == null && strVersion != ""){
             ProjectManager projectManager = ComponentAccessor.getProjectManager();
             Project project = projectManager.getProjectByCurrentKey(projectKey);
