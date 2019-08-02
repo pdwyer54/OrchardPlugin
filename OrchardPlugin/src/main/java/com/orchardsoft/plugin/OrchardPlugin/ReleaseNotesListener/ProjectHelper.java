@@ -97,6 +97,23 @@ public class ProjectHelper {
 		return versionNumber;	
 	}
 
+	public String getDescriptionCustomField(String keyword,Version version){
+
+		String fieldText = "";
+		debugger.logdebug("getDescriptionCustomField called",className);
+		String description = version.getDescription();
+		String searchKeyword = keyword+":";
+
+		debugger.logdebug(searchKeyword,className);
+		debugger.logdebug(description,className);
+
+		if(description.contains(searchKeyword)){
+			fieldText = getCustomField(description,searchKeyword);
+		}
+
+		return fieldText;
+	}
+
     public String getProjectCustomField(String keyword, Project project){
 
         debugger.logdebug("getProjectCustomField has been called",className);
@@ -108,27 +125,35 @@ public class ProjectHelper {
         debugger.logdebug(description,className);
 
         if(description.contains(searchKeyword)){
-            debugger.logdebug("keyword found",className);
-            int Pos = description.indexOf(searchKeyword);
-            int lastPos = Pos + searchKeyword.length();
-            debugger.logdebug(Integer.toString(lastPos),className);
-            if(lastPos>=0) {
-                int endPos = description.indexOf(";", lastPos);
-                debugger.logdebug(Integer.toString(endPos),className);
-                if (endPos >= 0) {
-                    fieldText = description.substring(lastPos,endPos);
-                    debugger.logdebug(fieldText,className);
-                    if(fieldText.charAt(0) == ' '){
-                        debugger.logdebug("First char is a space",className);
-                        // Remove the space
-                        fieldText = fieldText.substring(1);
-                    }
-                }
-            }
+			fieldText = getCustomField(description,searchKeyword);
         }
 
         return " "+fieldText;
     }
+
+    public String getCustomField(String description,String searchKeyword){
+
+		String fieldText = "";
+		debugger.logdebug("keyword found",className);
+		int Pos = description.indexOf(searchKeyword);
+		int lastPos = Pos + searchKeyword.length();
+		debugger.logdebug(Integer.toString(lastPos),className);
+		if(lastPos>=0) {
+			int endPos = description.indexOf(";", lastPos);
+			debugger.logdebug(Integer.toString(endPos),className);
+			if (endPos >= 0) {
+				fieldText = description.substring(lastPos,endPos);
+				debugger.logdebug(fieldText,className);
+				if(fieldText.charAt(0) == ' '){
+					debugger.logdebug("First char is a space",className);
+					// Remove the space
+					fieldText = fieldText.substring(1);
+				}
+			}
+		}
+
+		return fieldText;
+	}
 
 	public String checkHotfix(String versionNumber){
 		String hotfixText = "";

@@ -65,7 +65,10 @@ AJS.toInit(function(jQuery){
 				} else if ((sVal.indexOf("M-")==0)||(sVal.indexOf("m-")==0)){
 					sVal = sVal.replace("M-","MAPPER-").replace("m-","MAPPER-");
 					jQuery("#quickSearchInput").val(sVal);
-	    		} else if (sVal.indexOf("#")==0){
+	    		} else if ((sVal.indexOf("Win-")==0)||(sVal.indexOf("WIN-")==0)){
+					sVal = sVal.replace("Win-","WINAPI-").replace("WIN-","WINAPI-");
+					jQuery("#quickSearchInput").val(sVal);
+				} else if (sVal.indexOf("#")==0){
 					if(sVal.length>1){
 						if(jQuery.isNumeric(sVal[1])){
 							sVal = sVal.replace("#","TT-");

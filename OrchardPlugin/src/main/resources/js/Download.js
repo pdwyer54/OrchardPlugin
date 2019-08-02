@@ -2,7 +2,7 @@
 // PRD 04/23/19 DEV-557
 
 
-function getProject() {
+function getProject2() {
     var name = "";
 
     if (window.location.href.indexOf("HARVEST") > -1) {
@@ -35,9 +35,9 @@ function getProject() {
 }
 
 // This function will check if we are on the right screen or if we don't want to allow it
-function checkProject() {
+function checkProject2() {
     var isCorrectProject = false;
-    if (getProject()!=""){
+    if (getProject2()!=""){
         if ((window.location.href.indexOf("/versions/") > -1) && (window.location.href.indexOf("/projects/") > -1)) {
             isCorrectProject = true;
         } else if((window.location.href.indexOf("/fixforversion/") > -1)){
@@ -56,7 +56,7 @@ function getInfo(strVersion){
         type : "GET",
         url : AJS.params.baseURL+"/plugins/servlet/downloadservlet",
         async : false,
-        data : "version="+strVersion+"&project="+getProject(),
+        data : "version="+strVersion+"&project="+getProject2(),
         success : function(data) {
             text = data;
         },
@@ -129,7 +129,7 @@ AJS.toInit(function(jQuery){
             isShift = true;
         }
             // ctrl-shift-.
-        if (isCtrl && isShift && e.which == 190 && checkProject()){
+        if (isCtrl && isShift && e.which == 190 && checkProject2()){
             console.log("Triggering ctrl-shift-.");
             isCtrl = false;
             isShift = false;
@@ -137,7 +137,7 @@ AJS.toInit(function(jQuery){
             var pathArray = window.location.pathname.split('/'); // The last piece is the version Id number so
             var strVersion = getVersionName(pathArray[pathArray.length - 1]);
 
-            sendDownload(getProject()+" "+strVersion+".txt", strVersion);
+            sendDownload(getProject2()+" "+strVersion+".txt", strVersion);
 
         }
 

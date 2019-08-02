@@ -54,7 +54,7 @@ function checkProject() {
 
 // This takes the version name and project to get the ID. The ID is needed to determine what version we are changing. This is only needed
 // if we don't have a drop down box or if we
-function getVersionID(version,projectKey) {
+function getVersion(version,projectKey) {
 
     var resultData;
     var versionID = "";
@@ -85,16 +85,18 @@ function getVersionID(version,projectKey) {
             }
         }
 
-        versionID = results[0]['id'];
+        versionID = results;
     }
     return versionID;
 }
 
 
-function Release(oldVersion,newVersion,project,versionID) {
+function Release(oldVersion,newVersion,project,versionID,description) {
 
     if (versionID == "") {
-        versionID = getVersionID(oldVersion, project);
+        var versionJson = getVersion(oldVersion, project);
+        versionID = versionJson[0]['id'];
+        description = versionJson[0]['description'];
     }
 
     if (versionID != "") {
@@ -133,7 +135,8 @@ function Release(oldVersion,newVersion,project,versionID) {
                     "name": oldVersion,
                     "released": false,
                     "archived": false,
-                    "project": project
+                    "project": project,
+                    "description": description
 
                 }),
                 context: document.body,
@@ -211,6 +214,7 @@ AJS.toInit(function(jQuery){
             var resultData;
             var versionID = "";
             var availableArray = [];
+            var descriptionArray = [];
             jQuery.ajax({
                 type : 'GET',
                 dataType : 'json',
@@ -232,7 +236,7 @@ AJS.toInit(function(jQuery){
 
                 for (var i = 0; i < resultData.values.length; i++) {
                     if (resultData.values[i][searchField] == false) {
-                        var item = [resultData.values[i]["name"],resultData.values[i]["id"]];
+                        var item = [resultData.values[i]["name"],resultData.values[i]["id"],resultData.values[i]["description"]];
                         availableArray.push(item);
                     }
                 }
@@ -253,15 +257,17 @@ AJS.toInit(function(jQuery){
             dialog.addButton("Release", function (dialog) {
                 var oldversionValue = "";
                 var oldversionID = "";
+                var oldversionDesc = "";
                 var e = document.getElementById('nameList');
                 if (e != null){
                     oldversionValue = availableArray[e.selectedIndex][0];
                     oldversionID = availableArray[e.selectedIndex][1];
+                    oldversionDesc = availableArray[e.selectedIndex][2];
                 } else{
                     oldversionValue = document.getElementById('releaseName').value;
                 }
 
-                Release(oldversionValue,document.getElementById('newReleaseName').value,projectName,oldversionID);
+                Release(oldversionValue,document.getElementById('newReleaseName').value,projectName,oldversionID,oldversionDesc);
                 dialog.hide();
                 location.reload();
             });

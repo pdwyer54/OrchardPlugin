@@ -114,10 +114,13 @@ public class SendEmail {
 
         if (projectName.contains("Copia")) { // If Copia we have to add Trellis because it's the same thing
             String date = projectHelper.buildDate(version);
-            String trellisVersion = Integer.toString(projectHelper.currentProjectVersion("TRELLIS",version));
+            //String trellisVersion = Integer.toString(projectHelper.currentProjectVersion("TRELLIS",version));
+            String trellisVersion = projectHelper.getDescriptionCustomField("Trellis",version);
+            String sequioiaVersion = projectHelper.getDescriptionCustomField("Sequoia",version);
             trellisVersion = trellisVersion + "." + date;
+            sequioiaVersion = sequioiaVersion + "." + date;
 
-            subject = projectName + " " + versionNumber + "/Trellis " + trellisVersion + projectHelper.checkHotfix(versionNumber) + " is now available";
+            subject = projectName + " " + versionNumber + "/Trellis " + trellisVersion + "/Sequoia " + sequioiaVersion + projectHelper.checkHotfix(versionNumber) + " is now available";
         } else if (projectName.contains("Product Security")) {
             // No release here
         } else if(projectName.contains("Harvest LIS")) {
