@@ -82,7 +82,7 @@ public class SendEmail {
 
         }else if (projectKey.contains("LICENSE")){
             emailList = emailList + getUserEmail("orchard-dev")+ ",";
-            emailList = emailList + getUserEmail("rtindall")+",";
+            emailList = emailList + getUserEmail("bfitzsimmons")+",";
             emailList = emailList + getUserEmail("aLorraine");
 
         } else if (projectKey.contains("NLURW")){
@@ -93,7 +93,7 @@ public class SendEmail {
             emailList = emailList + getUserEmail(user);
         } else { // Debugging
             emailList = emailList + getUserEmail("pdwyer") +",";
-            emailList = emailList + getUserEmail("dwacker") + ",";
+            emailList = emailList + getUserEmail("dwacker");
         }
 
 
@@ -190,12 +190,6 @@ public class SendEmail {
 
 
     }
-
-     public void downloadTheHTML(String data,String version){
-
-
-
-     }
 
     // If email is sent to this address no matter what the project is, it should go
     // here

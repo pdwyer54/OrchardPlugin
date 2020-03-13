@@ -57,4 +57,5 @@
     <description key="download-servlet.description">The Download Servlet Plugin</description>  
     <url-pattern>/downloadservlet</url-pattern> 
   </servlet>
+
 </atlassian-plugin>

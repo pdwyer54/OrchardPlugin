@@ -18,7 +18,7 @@ https://developer.atlassian.com/display/DOCS/Introduction+to+the+Atlassian+Plugi
 https://developer.atlassian.com/docs/getting-started/set-up-the-atlassian-plugin-sdk-and-build-a-project/create-a-helloworld-plugin-project
 
 Dev Notes:
-I set this up in a way that seperates development from the actual dev environment that is JIRA, here is how you set up for development
+I set this up in a way that separates development from the actual dev environment that is JIRA, here is how you set up for development
 1. Follow the steps from the second link above to set up your JIRA development. Note that you do not need to modify the plugin
 2. Install eclipse: https://orc.orchardsoft.com/pages/viewpage.action?pageId=54073388
 3. Connect eclipse to git -> Window -> Show View -> Other -> Git Repositories
@@ -42,8 +42,8 @@ Loading from an existing project:
 2. atlas-run
 3. After a fairly long wait it should boot up and show you where the JIRA site is hosted: http://localhost:2990/jira
 
-Phil's future dev efforts:
-UI improvements - First one would be a response when large queries are running in JQL. Future efforts would be more intense with customizing tickets, adding per use option for work logged copy
+Future dev efforts:
+UI improvements - First one would be a response when large queries are running in JQL. Future efforts would be more intense with customizing tickets.
 Update Velocity
 Improve templates to be more modern
 
@@ -54,6 +54,7 @@ Versions:
 1.3 - Added Release Notes feature
 1.4 - Release Notes go out to everyone directly
 1.5 - Release Notes dialog/download added
+1.6 - Added Instrument Form Requests that are sent from Wufoo into the NRFM project and process them into new tickets
 
 Orchard Software JIRA Plugin
 Written by Phil Dwyer 5/23/17 DEV-376

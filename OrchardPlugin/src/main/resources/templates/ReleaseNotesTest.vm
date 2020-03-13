@@ -1,0 +1,49 @@
+## HTML template for emails
+<html>
+    #set($issuesObject = $issueInfoArray)
+    #set($TypeOrderInt = $issueTypeOrder)
+    #set($IssueName = $IssueTypeName)
+    #set($arrayNum = 0)
+    #set($image = $Image)
+    #set($projectName = $project.getName())
+    #set($URL = $baseURL)
+#if ($issuesObject.size() > 0)
+    #foreach($iterator in $TypeOrderInt) ## Make a table for each issue type
+        #set($IssueType = $IssueName.get($arrayNum))
+        <h2 class="auto-cursor-target">$IssueType</h2>
+    <table>
+        <colgroup> <col/> <col/> <col/> </colgroup>
+        <thead>
+        <tr>
+            <th>
+                <p>JIRA</p>
+            </th>
+            <th>
+                <p>Page</p>
+            </th>
+            <th>
+                <p>Description</p>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+            #set($rowCount = 1)
+            #foreach($issue in $issuesObject)
+                #set($issueType = $issue.getIssueType())
+                #set($issueText = $issue.getIssueText())
+                #set($issueNotes = $issue.getReleaseNotes())
+                #set($issuePage = $issue.getPage())
+                #if($IssueType.contains($issueType))
+                <tr>
+                    <td align="center" style="padding-left:5px;padding-right:5px;"><a href ="$URL/browse/$issueText">$issueText</a></td>
+                    <td align="left" colspan="1">$issuePage</td>
+                    <td align="center" colspan="1">$issueNotes</td>
+                </tr>
+                #end
+            #end
+        </tbody>
+    </table>
+        #set($arrayNum = $arrayNum+1)
+    #end
+#end
+</html>

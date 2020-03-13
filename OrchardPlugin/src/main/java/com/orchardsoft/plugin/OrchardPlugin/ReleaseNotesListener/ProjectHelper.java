@@ -5,24 +5,37 @@ package com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener;
 
 import com.atlassian.jira.bc.issue.IssueService;
 import com.atlassian.jira.bc.project.component.ProjectComponent;
+import com.atlassian.jira.bc.project.component.ProjectComponentManager;
+import com.atlassian.jira.bc.security.login.LoginResult;
+import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.component.ComponentAccessor;
-import com.atlassian.jira.issue.Issue;
-import com.atlassian.jira.issue.IssueInputParameters;
+import com.atlassian.jira.event.type.EventDispatchOption;
+import com.atlassian.jira.exception.CreateException;
+import com.atlassian.jira.issue.*;
+import com.atlassian.jira.issue.fields.CustomField;
 import com.atlassian.jira.issue.issuetype.IssueType;
+import com.atlassian.jira.issue.link.IssueLink;
+import com.atlassian.jira.issue.link.IssueLinkManager;
+import com.atlassian.jira.issue.link.IssueLinkType;
+import com.atlassian.jira.issue.resolution.Resolution;
 import com.atlassian.jira.project.Project;
 import com.atlassian.jira.project.version.Version;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.user.ApplicationUser;
+import com.atlassian.jira.util.ErrorCollection;
 import com.orchardsoft.plugin.OrchardPlugin.Debug;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 
 public class ProjectHelper {
 	
 	private static Debug debugger = new Debug();
 	private String className = this.getClass().getSimpleName();
-	
+	private static final IssueLinkManager issueLinkManager = ComponentAccessor.getIssueLinkManager();
+	private static final ProjectComponentManager componentManager = ComponentAccessor.getProjectComponentManager();
+	private static final CustomFieldManager customFieldManager = ComponentAccessor.getCustomFieldManager();
+	private static final IssueManager issueManager = ComponentAccessor.getIssueManager();
+
 	public ProjectHelper() {
 		
 	}
@@ -188,45 +201,257 @@ public class ProjectHelper {
 
 		debugger.logdebug("Creating tickets for Labeler",className);
 
-		createIssue(user,HarvestPID,summary,description,IDType,"slerch");
-		createIssue(user,CopiaPID,summary,description,IDType,"dwacker");
-		createIssue(user,ODEPID,summary,description,IDType,"ODE_Team");
-		createIssue(user,CollectPID,summary,description,IDType,"dwaddell");
+
+
+		createIssue(user,HarvestPID,summary,description,IDType,"slerch",IDType);
+		createIssue(user,CopiaPID,summary,description,IDType,"dwacker",IDType);
+		createIssue(user,ODEPID,summary,description,IDType,"ODE_Team",IDType);
+		createIssue(user,CollectPID,summary,description,IDType,"dwaddell",IDType);
 
 		return true;
 	}
 
-	private void createIssue(ApplicationUser user, Long ProjectID, String summary, String description, String IDType, String assignee){
+	public Issue createIssue(ApplicationUser user, Long ProjectID, String summary, String description, String issueIDType, String assignee, String priorityIDType){
+
 		IssueService issueService = ComponentAccessor.getIssueService();
 		IssueInputParameters issueInput = issueService.newIssueInputParameters();
+		JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getJiraAuthenticationContext();
 
 		issueInput.setProjectId(ProjectID);
 		issueInput.setSummary(summary);
 		issueInput.setDescription(description);
-		issueInput.setIssueTypeId(IDType); // Task
-		issueInput.setPriorityId(IDType); // Standard
+		issueInput.setIssueTypeId(issueIDType); // Task
+		issueInput.setPriorityId(priorityIDType); // Standard
 		issueInput.setReporterId(user.getUsername());
 		issueInput.setAssigneeId(assignee);
 
+		if (user != null){
+			debugger.logdebug(user.getDisplayName()+" is creating an issue", className);
+			jiraAuthenticationContext.setLoggedInUser(user);
+		} else{
+			debugger.logdebug("The user is null",className);
+		}
+
 		IssueService.CreateValidationResult issue = issueService.validateCreate(user,issueInput);
 
-		//ErrorCollection errorCollection = issue.getErrorCollection();
-		//Map<String, String> errorMessages = errorCollection.getErrors();
-		//for (Map.Entry<String,String> entry : errorMessages.entrySet()){
-		//	debugger.logdebug("Key: "+entry.getKey(),className);
-		//	debugger.logdebug("Value: "+entry.getValue(),className);
-		//}
+		debugger.logdebug("Creating a ticket in project: "+ProjectID.toString(),className);
 
-		//debugger.logdebug(errorMessages.toString(),className);
-		IssueService.IssueResult iResult = issueService.create(user, issue);
+		if (!issue.isValid()) {
+			ErrorCollection errorCollection = issue.getErrorCollection();
+			Map<String, String> errorMessages = errorCollection.getErrors();
+			for (Map.Entry<String, String> entry : errorMessages.entrySet()) {
+				debugger.logdebug("Key: " + entry.getKey(), className);
+				debugger.logdebug("Value: " + entry.getValue(), className);
+			}
+		}
+
+		Issue returnIssue = null;
+		if (issue.isValid()) {
+			//debugger.logdebug(errorMessages.toString(),className);
+			IssueService.IssueResult iResult = issueService.create(user, issue);
+			returnIssue = iResult.getIssue();
+		}
+
+			jiraAuthenticationContext.setLoggedInUser(null);
+			return returnIssue;
+
 	}
-	
+
+	public Boolean addIssueLink(Issue sourceIssue, Issue destissue, String issueLinkType, ApplicationUser user){
+		Boolean succeeded = false;
+		Long IssueLinkID = Long.valueOf(0);
+		if(issueLinkType == "relates"){
+			IssueLinkID = Long.valueOf(10003);
+		} else if (issueLinkType == "sub-task") {
+			IssueLinkID = Long.valueOf(10700);
+		}
+
+		try{
+			issueLinkManager.createIssueLink(sourceIssue.getId(),destissue.getId(),IssueLinkID,Long.valueOf(1),user);
+			succeeded = true;
+		}catch (CreateException x){
+			debugger.logdebug("There was an error in creating the issue link: "+sourceIssue.getId()+" "+destissue.getId()+" "+user.getUsername(),className);
+			debugger.logdebug(x.getMessage(),className);
+		}
+
+
+		return succeeded;
+	}
+
+	public Boolean checkIssueLink(Issue sourceIssue, String issueLinkType, ApplicationUser user){
+		Boolean Exists = false;
+
+		Long IssueLinkID = Long.valueOf(0);
+		if(issueLinkType == "relates"){
+			IssueLinkID = Long.valueOf(10003);
+		} else if (issueLinkType == "sub-task") {
+			IssueLinkID = Long.valueOf(10700);
+		}
+
+			Set<IssueLinkType> linkedIssues = issueLinkManager.getLinkCollection(sourceIssue,user).getLinkTypes();
+			for (IssueLinkType linkType:linkedIssues) {
+				if(linkType.getId() == IssueLinkID){
+					Exists = true;
+					break;
+				}
+			}
+
+		return Exists;
+	}
+
+	public Collection<Issue> getIssueLinks(Issue sourceIssue, String issueLinkType, ApplicationUser user){
+
+		final Collection<Issue> issueLinks = new ArrayList<Issue>();
+		Long IssueLinkID = Long.valueOf(0);
+		if(issueLinkType == "relates"){
+			IssueLinkID = Long.valueOf(10003);
+			debugger.logdebug("relates was selected",className);
+		} else if (issueLinkType == "sub-task") {
+			IssueLinkID = Long.valueOf(10700);
+			debugger.logdebug("sub-task was selected",className);
+		}
+
+		if (IssueLinkID > 0) {
+			Collection<Issue> allLinkedIssues = issueLinkManager.getLinkCollection(sourceIssue, user).getAllIssues();
+			//debugger.logdebug("There are " + String.valueOf(allLinkedIssues.size()) + " issues linked", className);
+			for (Issue issue : allLinkedIssues) {
+				//debugger.logdebug(issue.getKey()+" is being checked",className);
+				if (issueLinkManager.getIssueLink(sourceIssue.getId(), issue.getId(), IssueLinkID) != null) {
+					debugger.logdebug(issue.getKey()+" was added",className);
+					issueLinks.add(issue);
+				}
+			}
+			if (!issueLinks.isEmpty()) {
+				debugger.logdebug("There are links in this issue: " + String.valueOf(issueLinks.size()), className);
+			}
+		}
+
+		return issueLinks;
+	}
+
+	public Issue getSubTaskParent (Issue subTask){
+		Issue returnIssue = null;
+
+		List<IssueLink> allLinks = issueLinkManager.getInwardLinks(subTask.getId());
+		for (IssueLink link : allLinks) {
+			if(link.getIssueLinkType().getId() == 10700){
+				// It's a sub-task return the parent
+				returnIssue = link.getSourceObject();
+			}
+		}
+
+		return returnIssue;
+	}
+
+	public boolean addComponent(Issue issue, String componentToAdd, Long projectID){
+		boolean success = false;
+
+		ProjectComponent component = componentManager.findByComponentName(projectID,componentToAdd);
+
+		if(component != null) {
+			debugger.logdebug("Found component: "+component.getName(),className);
+			MutableIssue mutableIssue = (MutableIssue) issue;
+			debugger.logdebug("Mutable Issue Components: "+mutableIssue.getKey(),className);
+			Collection<ProjectComponent> issueComponents= issue.getComponents();
+			issueComponents.add(component);
+			mutableIssue.setComponent(issueComponents);
+			debugger.logdebug("Mutable Issue Components: "+mutableIssue.getComponents().toString(),className);
+			try{
+				issueManager.updateIssue(issue.getReporterUser(),mutableIssue, EventDispatchOption.ISSUE_UPDATED,false);
+				success = true;
+			} catch (Exception x){
+				debugger.logdebug("There was an error with updating the issue and adding the component", className);
+			}
+
+		} else {
+			debugger.logdebug("Could not find component",className);
+		}
+
+		return success;
+	}
+
+	public void addCustomFieldValue(Issue issue, CustomField customField, Object customFieldVal){
+		MutableIssue mutableIssue = (MutableIssue) issue;
+		//debugger.logdebug("Mutable Issue: "+mutableIssue.getKey(),className);
+		mutableIssue.setCustomFieldValue(customField,customFieldVal);
+		try{
+			issueManager.updateIssue(issue.getReporterUser(),mutableIssue, EventDispatchOption.ISSUE_UPDATED,false);
+		} catch (Exception x){
+			debugger.logdebug("There was an error with updating the issue and adding the customfield", className);
+		}
+	}
+
+	public CustomField getCustomFieldObject(String customFieldName){
+		CustomField finalCustomField = null;
+
+		Collection<CustomField> customFieldCollection = customFieldManager.getCustomFieldObjectsByName(customFieldName);
+		if (!(customFieldCollection.isEmpty())) {
+
+			// So this should only have 1 value in it so after the first loop just break
+			for (CustomField customfield : customFieldCollection) {
+				finalCustomField = customfield;
+				break;
+			}
+		}
+		return finalCustomField;
+	}
+
+	public boolean isResolved(Issue issue){
+		debugger.logdebug("isResolved was called",className);
+		boolean resolved = false;
+		Resolution resolution = issue.getResolution();
+		String sRes = "";
+		if(resolution != null){
+			sRes = resolution.getName();
+		}
+		debugger.logdebug("Resolution is "+sRes,className);
+
+		if (sRes.equals("Documented")){
+			resolved = true;
+		} else if (sRes.equals("Done")){
+			resolved = true;
+		} else if (sRes.equals("Fixed")){
+			resolved = true;
+		} else if (sRes.equals("Verified")){
+			resolved = true;
+		} else if (sRes.equals("Resolved")){
+			resolved = true;
+		}
+
+		if(resolved){
+			debugger.logdebug("Issue is resolved",className);
+		} else{
+			debugger.logdebug("Issue is unresolved",className);
+		}
+
+		return resolved;
+	}
+
 	public Collection<ProjectComponent> getComponentByProject(Project project) { // Gets all the components of a project
 		return project.getComponents();
 	}
 	
 	public Collection<IssueType> getIssueTypeByProject(Project project) {
 		return project.getIssueTypes();
+	}
+
+	public Collection<Issue> getIssuesInEpic(Issue epic) {
+		final String sLinkTypeName = "Epic-Story Link";
+		final Collection<IssueLink> links = ComponentAccessor.getIssueLinkManager().getOutwardLinks(epic.getId());
+		final Collection<Issue> issuesInEpic = new ArrayList<Issue>();
+		for (final IssueLink link : links) {
+			final String name = link.getIssueLinkType().getName();
+			final Issue destinationObject = link.getDestinationObject();
+			if (sLinkTypeName.equals(name)) {
+				issuesInEpic.add(destinationObject);
+			}
+		}
+
+		if(!issuesInEpic.isEmpty()) {
+			debugger.logdebug("There are issues in this epic: "+String.valueOf(issuesInEpic.size()),className);
+		}
+
+		return issuesInEpic;
 	}
 	
     public String buildDate(Version version) { // Build the date for releases, now looks like "YYMMDD" or "180329" for 03/29/2018 // Also handles hotfix if we pass in a version with Hotfix in it

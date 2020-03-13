@@ -9,6 +9,7 @@
 #set($URL = $baseURL)
 #set($orchardLogo = $MainLogo)
 #set($flavorText = $FlavorText)
+
 <IMG SRC=$image alt="Product Logo" WIDTH:"30px" HEIGHT:"30px" align="right"> <br><br>
 #if ($issuesObject.size() > 0)
 	#if($flavorText != "")

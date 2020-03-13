@@ -14,6 +14,7 @@ public class Debug{
     private static final boolean canLog = false; // Set this to false in prod systems
     public static boolean isTest = false; // Set this to false in prod systems as well
     public static boolean isSingleTestSystem = false; // Set this if we are in the standalone server we set up
+    private static boolean warnLevel = false;
 
     public Debug() {
 
@@ -25,7 +26,11 @@ public class Debug{
         string = string+" Message: ";
         string = string+message;
         if(canLog) {
-            log.info(string);
+            if(warnLevel){
+                log.warn(string);
+            } else {
+                log.info(string);
+            }
         }
     }
     public void printDebugToFile(String message, String filepath) {

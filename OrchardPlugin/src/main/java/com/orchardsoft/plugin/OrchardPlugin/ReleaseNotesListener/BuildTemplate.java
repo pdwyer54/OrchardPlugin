@@ -36,6 +36,8 @@ public class BuildTemplate {
             versionDescription = version.getDescription();
         }
 
+        // TODO: Rework this to use the common method in ProjectHelper for getting custom fields
+
         // Gather the custom field objects
         debugger.logdebug("Number of issues: "+IssueList.size(),className);
         Collection<CustomField> ReleaseNotesCollection = customFieldManager.getCustomFieldObjectsByName("Release Notes");
@@ -114,7 +116,7 @@ public class BuildTemplate {
             if(Page != null){
                 Object PageObject = issue.getCustomFieldValue(Page);
                 if(PageObject != null){
-                    pageString = PageObject.toString();
+                    pageString = PageObject.toString().replace("[","").replace("]","").replace("_"," ");
                 }
             }
 
