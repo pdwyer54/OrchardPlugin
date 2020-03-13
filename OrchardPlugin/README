@@ -55,6 +55,7 @@ Versions:
 1.4 - Release Notes go out to everyone directly
 1.5 - Release Notes dialog/download added
 1.6 - Added Instrument Form Requests that are sent from Wufoo into the NRFM project and process them into new tickets
+1.7 - Automatically adding story points and creating epics on release
 
 Orchard Software JIRA Plugin
 Written by Phil Dwyer 5/23/17 DEV-376
