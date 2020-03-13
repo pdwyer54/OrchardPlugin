@@ -262,14 +262,6 @@ public class TriggerCreateListener implements InitializingBean, DisposableBean {
                         debugger.logdebug("No epic could be found",className);
                     }
                 }
-                /**
-                 * This will be when they change a task of a feature. It might have story points but for now we will only update if it's actually on an epic or an epic
-                boolean bContinue = projectHelper.checkIssueLink(issue,"sub-task",currentUser);
-                if(!bContinue){
-
-                } else{
-
-                } **/
 
                 if (epicLinkTicket != null){
                     CustomField CFStoryPointsTotal = projectHelper.getCustomFieldObject("Epic Story Points");
