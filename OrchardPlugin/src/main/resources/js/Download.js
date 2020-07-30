@@ -47,6 +47,17 @@ function checkProject2() {
     return isCorrectProject;
 }
 
+function isFilter(){
+    var isCorrectFilter = false;
+    if (window.location.href.indexOf("issues/?filter=") > -1){
+        isCorrectFilter = true;
+    } else if (window.location.href.indexOf("/issues/?jql=") > -1){
+        isCorrectFilter = true;
+    }
+
+    return isCorrectFilter;
+}
+
 function getInfo(strVersion){
     // This calls DownloadServlet.java on the server
     // This only have a doGet statement right now so ajax can only use the get command
@@ -56,7 +67,29 @@ function getInfo(strVersion){
         type : "GET",
         url : AJS.params.baseURL+"/plugins/servlet/downloadservlet",
         async : false,
-        data : "version="+strVersion+"&project="+getProject2(),
+        data : "version="+strVersion+"&project="+getProject2()+"&isDownload=true&createReport=true",
+        success : function(data) {
+            text = data;
+        },
+        error: function(XMLHttpRequest) {
+            console.log(XMLHttpRequest.responseText);
+        }
+    });
+
+    return text;
+
+}
+
+function createReport(filter){
+    // This calls DownloadServlet.java on the server
+    // This only have a doGet statement right now so ajax can only use the get command
+
+    var text = '';
+    $.ajax({
+        type : "GET",
+        url : AJS.params.baseURL+"/plugins/servlet/downloadservlet",
+        async : false,
+        data : "filter="+filter+"&isDownload=false&createReport=true",
         success : function(data) {
             text = data;
         },
@@ -73,6 +106,23 @@ function sendDownload(filename, version) {
 
     // This method creates an element that then is used to send a download to the user
     var text = getInfo(version);
+
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
+function getReport(filename, filter) {
+
+    // This method creates an element that then is used to send a download to the user
+    var text = createReport(filter);
 
     var element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
@@ -139,7 +189,17 @@ AJS.toInit(function(jQuery){
 
             sendDownload(getProject2()+" "+strVersion+".txt", strVersion);
 
-        }
+        } else  if (isCtrl && isShift && e.which == 76) {
+            console.log("Triggering ctrl-shift-l");
+            isCtrl = false;
+            isShift = false;
 
+            if (isFilter()) {
+                var filter = $("#advanced-search").val()
+                console.log("Filter: "+filter);
+                var today = new Date();
+                getReport( "Time logged Report "+today.toDateString()+".txt",filter);
+            }
+        }
     })
 });

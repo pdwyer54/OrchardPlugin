@@ -125,6 +125,10 @@ public class BuildTemplate {
                 TemplateObject templateObject = new TemplateObject(releaseNotesString, issue.getKey(), fixedByString, clientNameString, issue.getIssueType().getName(), pageString,issue);
                 templateObjectArrayList.add(templateObject);
             }
+
+            if(issue.getIssueType().toString().contains("Epic")){
+                //version.getName()
+            }
         }
 
         Collection<IssueType> issueTypeList = project.getIssueTypes();

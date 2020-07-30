@@ -18,17 +18,21 @@ public class BuildQuery {
 		
 	}
 	
-	public Query JQLBuilderBuild(String projectName, String version, String componentItem, IssueType issuetype) {
+	public Query JQLBuilderBuild(String projectName, String version, String componentItem, IssueType issuetype, String issuetypeName) {
 		// If we don't have a component, mark it as empty
 
 		final JqlQueryBuilder builder = JqlQueryBuilder.newBuilder();
+
+		if (issuetypeName == ""){
+			issuetypeName = issuetype.getName();
+		}
 
 		if(debugger.isSingleTestSystem) {
 			// Test system query
 			// Query the project and component only
 
 			if(componentItem == "") {
-				builder.where().project().eq().string(projectName).and().issueType().eq().string(issuetype.getName());
+				builder.where().project().eq().string(projectName).and().issueType().eq().string(issuetypeName);
 			} else {
 				builder.where().project().eq().string(projectName).and().component().eq().string(componentItem);
 			}
@@ -44,7 +48,7 @@ public class BuildQuery {
 
 
             if(componentItem == "") {
-                builder.where().project().eq().string(projectName).and().fixVersion().eq().string(version).and().issueType().eq().string(issuetype.getName());
+                builder.where().project().eq().string(projectName).and().fixVersion().eq().string(version).and().issueType().eq().string(issuetypeName);
 				//builder.where().project().eq().string(projectName).and().resolution().eq().string("verified").and().fixVersion().eq().string(version).and().issueType().eq().string(issuetype.getName());
 			} else {
 				//builder.where().project().eq().string(projectName).and().resolution().eq().string("verified").and().fixVersion().eq().string(version).and().component().eq().string(componentItem);
@@ -56,5 +60,19 @@ public class BuildQuery {
 		
 		return query;
 	}
+
+	public Query JQLReleaseQueryBuilderNotEpic (String projectName, String version){
+		final JqlQueryBuilder builder = JqlQueryBuilder.newBuilder();
+
+
+		builder.where().project().eq().string(projectName).and().fixVersion().eq().string(version).and().issueType().notEq().string("Epic");
+
+		Query query = builder.buildQuery();
+
+		return query;
+
+	}
+
+
 
 }

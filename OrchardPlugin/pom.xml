@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.orchardsoft.plugin</groupId>
     <artifactId>OrchardPlugin</artifactId>
-    <version>1.6</version>
+    <version>1.7</version>
     <organization>
         <name>Orchard Software</name>
         <url>http://www.orchardsoft.com/</url>
