@@ -111,7 +111,7 @@ public class DownloadServlet extends HttpServlet{
             } else {
                 try {
                     searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
-                    issuesInList = searchResults.getIssues();
+                    issuesInList = searchResults.getResults();
 
                 } catch (Exception e) {
                     debugger.logdebug(e.getMessage(), className);
@@ -176,7 +176,7 @@ public class DownloadServlet extends HttpServlet{
                 } else {
                     try {
                         searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
-                        issuesInList = searchResults.getIssues();
+                        issuesInList = searchResults.getResults();
 
                     } catch (Exception e) {
                         debugger.logdebug(e.getMessage(), className);

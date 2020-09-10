@@ -9,7 +9,8 @@
     <param name="plugin-logo">images/MainCoin.png</param> 
   </plugin-info>  
   <!-- add our i18n resource -->  
-  <resource type="i18n" name="i18n" location="OrchardPlugin"/>  
+  <resource type="i18n" name="i18n" location="OrchardPlugin"/>
+
   <!-- add our web resources -->  
   <web-resource key="OrchardPlugin-resources" name="OrchardPlugin Web Resources"> 
     <dependency>com.atlassian.auiplugin:ajs</dependency>  
@@ -19,6 +20,7 @@
     <resource type="download" name="Download.jsp" location="/jsps/Download.jsp"/>  
     <context>OrchardPlugin</context> 
   </web-resource>
+
   <!-- Autofill for searches -->  
   <web-resource key="soy-template-search" name="soy template search"> 
     <transformation extension="js">
@@ -26,7 +28,8 @@
     </transformation>  
     <resource type="download" name="Search.js" location="/js/Search.js"/>  
     <context>atl.general</context> 
-  </web-resource>  
+  </web-resource>
+
   <!-- Copying work logged comments directly to the normal comment section -->  
   <web-resource key="WorkLogged" name="Worked Logged Copy"> 
     <dependency>com.atlassian.auiplugin:ajs</dependency>  
@@ -35,7 +38,8 @@
     <context>jira.view.issue</context>  
     <context>atl.general</context>  
     <context>atl.admin</context> 
-  </web-resource>  
+  </web-resource>
+
   <web-resource key="ReleaseDialog" name="Release Dialog"> 
     <dependency>com.atlassian.auiplugin:ajs</dependency>  
     <dependency>com.atlassian.auiplugin:dialog2</dependency>  
@@ -44,7 +48,8 @@
     <resource type="download" name="ReleaseDialog.js" location="/js/ReleaseDialog.js"/>  
     <context>atl.admin</context>  
     <context>atl.general</context> 
-  </web-resource>  
+  </web-resource>
+
   <web-resource key="DownloadRelease" name="Download Release"> 
     <dependency>com.atlassian.auiplugin:ajs</dependency>  
     <dependency>com.atlassian.auiplugin:dialog2</dependency>  
@@ -52,7 +57,8 @@
     <dependency>com.atlassian.auiplugin:aui-select2</dependency>  
     <resource type="download" name="Download.js" location="/js/Download.js"/>  
     <context>atl.general</context> 
-  </web-resource>  
+  </web-resource>
+
   <servlet name="Download Servlet" i18n-name-key="download-servlet.name" key="download-servlet" class="com.orchardsoft.plugin.servlet.DownloadServlet"> 
     <description key="download-servlet.description">The Download Servlet Plugin</description>  
     <url-pattern>/downloadservlet</url-pattern> 

@@ -293,7 +293,7 @@ AJS.toInit(function(jQuery){
 
             // Standard sizes are 400, 600, 800 and 960 pixels wide
             var dialog = new AJS.Dialog({
-                width: 250,
+                width: 300,
                 height: 300,
                 id: "release-dialog",
                 closeOnOutsideClick: true
@@ -356,7 +356,7 @@ AJS.toInit(function(jQuery){
                 dialog.addPanel("SinglePanel", "<p>Version to Release:" +
                     " <input type='text' name='releaseName' id='releaseName'/><br/><br/>" +
                     "New Release Name: <input type='text' name='newReleaseName' id='newReleaseName'/><br/><br/>" +
-                    "<input type='checkbox' name='isHotfix' value='Hotfix'> Hotfix?</p>", "panelbody");
+                    "<input type='checkbox' name='isHotfix' value='Hotfix'> Is this a hotfix?</p>", "panelbody");
             }
 
             e.preventDefault();

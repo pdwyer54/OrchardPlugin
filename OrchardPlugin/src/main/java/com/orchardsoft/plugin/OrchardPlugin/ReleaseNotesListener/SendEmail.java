@@ -120,7 +120,7 @@ public class SendEmail {
             trellisVersion = trellisVersion + "." + date;
             sequioiaVersion = sequioiaVersion + "." + date;
 
-            subject = projectName + " " + versionNumber + "/Trellis " + trellisVersion + "/Sequoia " + sequioiaVersion + projectHelper.checkHotfix(versionNumber) + " is now available";
+            subject = "Orchard Outreach " + versionNumber + "/Point of Care " + trellisVersion + "/Enterprise Lab " + sequioiaVersion + projectHelper.checkHotfix(versionNumber) + " is now available";
         } else if (projectName.contains("Product Security")) {
             // No release here
         } else if(projectName.contains("Harvest LIS")) {
@@ -217,6 +217,18 @@ public class SendEmail {
         }
 
         return email;
+    }
+
+    public ApplicationUser getUser(String userName){
+        ApplicationUser user = null;
+
+        user = userManager.getUserByNameEvenWhenUnknown(userName);
+
+        if (!userManager.isUserExisting(user)) {
+            user = null;
+        }
+
+        return user;
     }
 
 

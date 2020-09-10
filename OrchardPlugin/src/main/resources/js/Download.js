@@ -198,7 +198,7 @@ AJS.toInit(function(jQuery){
                 var filter = $("#advanced-search").val()
                 console.log("Filter: "+filter);
                 var today = new Date();
-                getReport( "Time logged Report "+today.toDateString()+".txt",filter);
+                    getReport("Time logged Report " + today.toDateString() + ".txt", filter);
             }
         }
     })

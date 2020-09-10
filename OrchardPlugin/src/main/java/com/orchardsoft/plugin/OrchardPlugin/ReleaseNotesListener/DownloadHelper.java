@@ -103,7 +103,7 @@ public class DownloadHelper {
                         } else {
                             try {
                                 searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
-                                issuesInList = searchResults.getIssues();
+                                issuesInList = searchResults.getResults();
                                 // debugger.logdebug(component.getName(), className);
                                 debugger.logdebug(Integer.toString(issuesInList.size()), className);
 
