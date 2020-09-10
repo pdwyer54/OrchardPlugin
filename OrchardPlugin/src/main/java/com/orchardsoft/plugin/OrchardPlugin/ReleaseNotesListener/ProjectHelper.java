@@ -24,6 +24,7 @@ import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.util.ErrorCollection;
 import com.orchardsoft.plugin.OrchardPlugin.Debug;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.util.*;
 
@@ -217,6 +218,11 @@ public class ProjectHelper {
 		IssueInputParameters issueInput = issueService.newIssueInputParameters();
 		JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getJiraAuthenticationContext();
 
+		if(issueIDType.contains("10018")){
+			CustomField customField = getCustomFieldObject("Epic Name");
+			issueInput.addCustomFieldValue(customField.getIdAsLong(),summary);
+		}
+
 		issueInput.setProjectId(ProjectID);
 		issueInput.setSummary(summary);
 		issueInput.setDescription(description);
@@ -303,22 +309,38 @@ public class ProjectHelper {
 
 		final Collection<Issue> issueLinks = new ArrayList<Issue>();
 		Long IssueLinkID = Long.valueOf(0);
+		boolean sourceCheck = true; // If this is true the source issue is the outward description, if false the source issue is the inward description
 		if(issueLinkType == "relates"){
 			IssueLinkID = Long.valueOf(10003);
 			debugger.logdebug("relates was selected",className);
 		} else if (issueLinkType == "sub-task") {
 			IssueLinkID = Long.valueOf(10700);
 			debugger.logdebug("sub-task was selected",className);
+		} else if (issueLinkType == "is blocked by"){
+			IssueLinkID = Long.valueOf(10203);
+			sourceCheck = false;
+			debugger.logdebug("is blocked by was selected",className);
+		} else if (issueLinkType == "blocks"){
+			IssueLinkID = Long.valueOf(10203);
+			sourceCheck = true;
+			debugger.logdebug("blocks was selected",className);
 		}
 
 		if (IssueLinkID > 0) {
 			Collection<Issue> allLinkedIssues = issueLinkManager.getLinkCollection(sourceIssue, user).getAllIssues();
-			//debugger.logdebug("There are " + String.valueOf(allLinkedIssues.size()) + " issues linked", className);
+			debugger.logdebug("There are " + String.valueOf(allLinkedIssues.size()) + " issues linked", className);
 			for (Issue issue : allLinkedIssues) {
-				//debugger.logdebug(issue.getKey()+" is being checked",className);
-				if (issueLinkManager.getIssueLink(sourceIssue.getId(), issue.getId(), IssueLinkID) != null) {
-					debugger.logdebug(issue.getKey()+" was added",className);
-					issueLinks.add(issue);
+				debugger.logdebug(issue.getKey()+" is being checked",className);
+				if (sourceCheck){
+					if (issueLinkManager.getIssueLink(sourceIssue.getId(), issue.getId(), IssueLinkID) != null) {
+						debugger.logdebug(issue.getKey()+" was added",className);
+						issueLinks.add(issue);
+					}
+				} else {
+					if ((issueLinkManager.getIssueLink(issue.getId(), sourceIssue.getId(), IssueLinkID) != null)) {
+						debugger.logdebug(issue.getKey() + " was added", className);
+						issueLinks.add(issue);
+					}
 				}
 			}
 			if (!issueLinks.isEmpty()) {
@@ -341,6 +363,38 @@ public class ProjectHelper {
 		}
 
 		return returnIssue;
+	}
+
+	public boolean setSummary(Issue issue, String summary){
+		MutableIssue mutableIssue = (MutableIssue) issue;
+		boolean success = false;
+
+		mutableIssue.setSummary(summary);
+		try{
+			issueManager.updateIssue(issue.getReporterUser(),mutableIssue, EventDispatchOption.ISSUE_UPDATED,false);
+			success = true;
+		} catch (Exception x){
+			debugger.logdebug("There was an error with updating the issue and adding the component", className);
+		}
+
+		return success;
+
+	}
+
+	public boolean setFixVersion(Issue issue, Collection<Version> versions){
+		MutableIssue mutableIssue = (MutableIssue) issue;
+		boolean success = false;
+
+		mutableIssue.setFixVersions(versions);
+		try{
+			issueManager.updateIssue(issue.getReporterUser(),mutableIssue, EventDispatchOption.ISSUE_UPDATED,false);
+			success = true;
+		} catch (Exception x){
+			debugger.logdebug("There was an error with updating the issue and adding the component", className);
+		}
+
+		return success;
+
 	}
 
 	public boolean addComponent(Issue issue, String componentToAdd, Long projectID){
@@ -371,14 +425,22 @@ public class ProjectHelper {
 	}
 
 	public void addCustomFieldValue(Issue issue, CustomField customField, Object customFieldVal){
-		MutableIssue mutableIssue = (MutableIssue) issue;
-		//debugger.logdebug("Mutable Issue: "+mutableIssue.getKey(),className);
-		mutableIssue.setCustomFieldValue(customField,customFieldVal);
-		try{
-			issueManager.updateIssue(issue.getReporterUser(),mutableIssue, EventDispatchOption.ISSUE_UPDATED,false);
+		debugger.logdebug("Attempting to add custom field value",className);
+		try {
+			MutableIssue mutableIssue = (MutableIssue) issue;
+			debugger.logdebug("Mutable Issue: "+mutableIssue.getKey(),className);
+			mutableIssue.setCustomFieldValue(customField,customFieldVal);
+			debugger.logdebug("Setting custom field: "+customField.getFieldName()+" to "+customFieldVal.toString(),className);
+			try{
+				issueManager.updateIssue(issue.getReporterUser(),mutableIssue, EventDispatchOption.ISSUE_UPDATED,false);
+				debugger.logdebug("Issue updated",className);
+			} catch (Exception x){
+				debugger.logdebug("There was an error with updating the issue and adding the customfield", className);
+			}
 		} catch (Exception x){
-			debugger.logdebug("There was an error with updating the issue and adding the customfield", className);
+			debugger.logdebug("Failed to cast to Mutable Issue",className);
 		}
+
 	}
 
 	public CustomField getCustomFieldObject(String customFieldName){
@@ -415,6 +477,10 @@ public class ProjectHelper {
 		} else if (sRes.equals("Verified")){
 			resolved = true;
 		} else if (sRes.equals("Resolved")){
+			resolved = true;
+		} else if (sRes.equals("Duplicate")){
+			resolved = true;
+		} else if (sRes.equals("No longer needed")){
 			resolved = true;
 		}
 
@@ -453,6 +519,8 @@ public class ProjectHelper {
 
 		return issuesInEpic;
 	}
+
+
 	
     public String buildDate(Version version) { // Build the date for releases, now looks like "YYMMDD" or "180329" for 03/29/2018 // Also handles hotfix if we pass in a version with Hotfix in it
     	

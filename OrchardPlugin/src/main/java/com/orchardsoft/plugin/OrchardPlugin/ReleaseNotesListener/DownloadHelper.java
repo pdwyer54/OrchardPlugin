@@ -16,6 +16,7 @@ import com.atlassian.jira.util.MessageSet;
 import com.atlassian.jira.web.bean.PagerFilter;
 import com.atlassian.query.Query;
 import com.orchardsoft.plugin.OrchardPlugin.Debug;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +34,7 @@ public class DownloadHelper {
 
         // What are we doing?
         Boolean bSendEmail = true;
-
+        Boolean bDownload = false;
         // If we have these things and the first parameter is null then we are downloading
         // That means we need to set the version first
         if (version == null && strVersion != ""){
@@ -45,6 +46,7 @@ public class DownloadHelper {
                     version = ver;
                     debugger.logdebug("We are downloading, version found: "+version.getName(), className);
                     bSendEmail = false;
+                    bDownload = true;
                     break;
 
 
@@ -81,29 +83,39 @@ public class DownloadHelper {
                 Collection<IssueType> issueTypeList = projectHelper.getIssueTypeByProject(project); // This list is sorted in a way already, however it's sorted in the project scheme
                 List<Issue> issuesInList = new ArrayList<>();
                 ArrayList<Issue> allIssues = new ArrayList<>();
+                Boolean bSkip = false;
                 //for (ProjectComponent component : componentList) { // Run a query for each component, this is for Copia eventually
                 for (IssueType issueType : issueTypeList) {
-                    query = queryBuilder.JQLBuilderBuild(project.getName(), version.getName(), "", issueType);
-
-                    MessageSet errorMessages = searchService.validateQuery(user, query);
-                    if (errorMessages.hasAnyErrors()) {
-                        // Add error logging
-                        debugger.logdebug("Failure in Query", className);
+                    if (bDownload) {
+                        bSkip = (issueType.getName().contains("Task"));
                     } else {
-                        try {
-                            searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
-                            issuesInList = searchResults.getIssues();
-                            // debugger.logdebug(component.getName(), className);
-                            debugger.logdebug(Integer.toString(issuesInList.size()), className);
+                        bSkip = false;
+                    }
 
-                            if (!issuesInList.isEmpty()) {
-                                int markedChange = allIssues.size();
-                                allIssues.addAll(issuesInList);
+                    if(!bSkip) {
+                        query = queryBuilder.JQLBuilderBuild(project.getName(), version.getName(), "", issueType, "");
+
+
+                        MessageSet errorMessages = searchService.validateQuery(user, query);
+                        if (errorMessages.hasAnyErrors()) {
+                            // Add error logging
+                            debugger.logdebug("Failure in Query", className);
+                        } else {
+                            try {
+                                searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
+                                issuesInList = searchResults.getResults();
+                                // debugger.logdebug(component.getName(), className);
+                                debugger.logdebug(Integer.toString(issuesInList.size()), className);
+
+                                if (!issuesInList.isEmpty()) {
+                                    int markedChange = allIssues.size();
+                                    allIssues.addAll(issuesInList);
+                                }
+
+                            } catch (Exception e) {
+                                debugger.logdebug("Line 134", className);
+                                debugger.logdebug(e.getMessage(), className);
                             }
-
-                        } catch (Exception e) {
-                            debugger.logdebug("Line 134", className);
-                            debugger.logdebug(e.getMessage(), className);
                         }
                     }
                 }
@@ -162,7 +174,7 @@ public class DownloadHelper {
 
                 if (versionDescription.contains("DNS")) { // If we added DNS to the description, don't send the email
                     bSendEmail = false;
-                } else if (versionDescription.contains("download")) { // If we just want to download we will slap download in the description
+                } else if (versionDescription.contains("download")) { // If wMAybe just want to download we will slap download in the description
                     bSendEmail = false;
                 }
                 debugger.logdebug(emailList, className);
@@ -186,5 +198,7 @@ public class DownloadHelper {
         projectHelper.buildProjectList(projectList);
         return projectList.contains(projectKey);
     }
+
+
 
 }

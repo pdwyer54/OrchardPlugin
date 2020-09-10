@@ -35,6 +35,28 @@ function getProject() {
     return name;
 }
 
+function getInfo2(oldVersion,newVersion){
+    // This calls DownloadServlet.java on the server
+    // This only have a doGet statement right now so ajax can only use the get command
+
+    var text = '';
+    $.ajax({
+        type : "GET",
+        url : AJS.params.baseURL+"/plugins/servlet/downloadservlet",
+        async : false,
+        data : "oldVersion="+oldVersion+"&newVersion="+newVersion+"&isDownload=false+createReport=false"+"&project="+getProject(),
+        success : function(data) {
+            text = data;
+        },
+        error: function(XMLHttpRequest) {
+            console.log(XMLHttpRequest.responseText);
+        }
+    });
+
+    return text;
+
+}
+
 // This function will check if we are on the right screen or if we don't want to allow it
 function checkProject() {
     var isCorrectProject = false;
@@ -147,6 +169,31 @@ function Release(oldVersion,newVersion,project,versionID,description) {
                     console.log(XMLHttpRequest.responseText);
                 }
             });
+            getInfo2(oldVersion,newVersion);
+        } else {
+            jQuery.ajax({
+                type: "POST",
+                dataType: "json",
+                contentType: "application/json;",
+                async: false,
+                url: AJS.params.baseURL + "/rest/api/2/version",
+                data: JSON.stringify({
+                    "name": "Hotfix Next " + oldVersion,
+                    "released": false,
+                    "archived": false,
+                    "project": project,
+                    "description": description
+
+                }),
+                context: document.body,
+                success: function (data) {
+                    returnData = data;
+                },
+                error: function(XMLHttpRequest) {
+                    console.log(XMLHttpRequest.responseText);
+                }
+            });
+            getInfo2(oldVersion,"Hotfix Next" + oldVersion);
         }
 
 }
@@ -246,7 +293,7 @@ AJS.toInit(function(jQuery){
 
             // Standard sizes are 400, 600, 800 and 960 pixels wide
             var dialog = new AJS.Dialog({
-                width: 250,
+                width: 300,
                 height: 300,
                 id: "release-dialog",
                 closeOnOutsideClick: true
@@ -295,7 +342,7 @@ AJS.toInit(function(jQuery){
                 dialog.addPanel("SinglePanel", "<p>Version to Release:" +
                     " <select id='nameList'></select><br/><br/>" +
                     "New Release Name: <input type='text' name='newReleaseName' id='newReleaseName'/><br/><br/>" +
-                    "<input type='checkbox' id='isHotfix' name='isHotfix' value='Hotfix'> Create new hotfix?</p>", "panelbody");
+                    "<input type='checkbox' id='isHotfix' name='isHotfix' value='Hotfix'> Is this a hotfix?</p>", "panelbody");
 
                 var select = document.getElementById("nameList");
                 for (var i=0; i < availableArray.length;i++){
@@ -309,7 +356,7 @@ AJS.toInit(function(jQuery){
                 dialog.addPanel("SinglePanel", "<p>Version to Release:" +
                     " <input type='text' name='releaseName' id='releaseName'/><br/><br/>" +
                     "New Release Name: <input type='text' name='newReleaseName' id='newReleaseName'/><br/><br/>" +
-                    "<input type='checkbox' name='isHotfix' value='Hotfix'> Hotfix?</p>", "panelbody");
+                    "<input type='checkbox' name='isHotfix' value='Hotfix'> Is this a hotfix?</p>", "panelbody");
             }
 
             e.preventDefault();

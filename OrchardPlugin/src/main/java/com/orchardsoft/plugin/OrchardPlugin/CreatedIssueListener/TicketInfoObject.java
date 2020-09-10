@@ -99,7 +99,14 @@ public class TicketInfoObject {
     // Get's the email address of the user we hold in the object
     public String getEmailAddress(){
         SendEmail emailHandler = new SendEmail();
-        return emailHandler.getUserEmail(emailUserName);
+        String username = "";
+        if(emailUserName.endsWith("@orchardsoft.com")){
+            username = emailUserName.replace("@orchardsoft.com","");
+        } else {
+            username = emailUserName;
+        }
+
+        return emailHandler.getUserEmail(username);
 
     }
 
