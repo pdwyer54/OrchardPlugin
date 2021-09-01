@@ -22,6 +22,7 @@ public class SendEmail {
     private static Debug debugger = new Debug();
     private String className = this.getClass().getSimpleName();
     private static final UserManager userManager = ComponentAccessor.getUserManager();
+    private static final ProjectHelper projectHelper = new ProjectHelper();
 
     public SendEmail() {
 
@@ -105,7 +106,7 @@ public class SendEmail {
         // Builds the subject, really just takes the version number and project and adds now available.
 
         String subject = "";
-        ProjectHelper projectHelper = new ProjectHelper();
+        String date = projectHelper.buildDate(version);
 
         String versionDescription = "";
         if(version.getDescription() != null){
@@ -113,14 +114,23 @@ public class SendEmail {
         }
 
         if (projectName.contains("Copia")) { // If Copia we have to add Trellis because it's the same thing
-            String date = projectHelper.buildDate(version);
-            //String trellisVersion = Integer.toString(projectHelper.currentProjectVersion("TRELLIS",version));
-            String trellisVersion = projectHelper.getDescriptionCustomField("Trellis",version);
-            String sequioiaVersion = projectHelper.getDescriptionCustomField("Sequoia",version);
-            trellisVersion = trellisVersion + "." + date;
-            sequioiaVersion = sequioiaVersion + "." + date;
 
-            subject = "Orchard Outreach " + versionNumber + "/Point of Care " + trellisVersion + "/Enterprise Lab " + sequioiaVersion + projectHelper.checkHotfix(versionNumber) + " is now available";
+            //String trellisVersion = Integer.toString(projectHelper.currentProjectVersion("TRELLIS",version));
+
+
+            int majorVersion = Integer.valueOf(versionNumber.substring(0,1));
+
+
+            if(majorVersion>=8) {
+                subject = "Orchard Outreach, Orchard Point-of-Care, Orchard Enterprise Lab " + versionNumber + projectHelper.checkHotfix(versionNumber) + " is now available";
+            } else {
+                String trellisVersion = projectHelper.getDescriptionCustomField("Trellis",version);
+                String sequioiaVersion = projectHelper.getDescriptionCustomField("Sequoia",version);
+                trellisVersion = trellisVersion + "." + date;
+                sequioiaVersion = sequioiaVersion + "." + date;
+
+                subject = "Orchard Copia " + versionNumber + "/Trellis " + trellisVersion + "/Sequoia " + sequioiaVersion + projectHelper.checkHotfix(versionNumber) + " is now available";
+            }
         } else if (projectName.contains("Product Security")) {
             // No release here
         } else if(projectName.contains("Harvest LIS")) {
@@ -133,10 +143,12 @@ public class SendEmail {
             subject = "New version of Win32API plug-in released";
         } else if (projectName.contains("License Generator")){
             subject = versionNumber + " is now available";
-        }
-        else {
+        } else if(projectName.contains("Interface Engine")){
+            subject = projectHelper.getIEVersion(version)+" is now available";
+
+        } else {
             // All of these don't need the hotfix part as hotfixes aren't really part of the release cycles
-            if(projectName.contains("Interface Engine") || (projectName.contains("Orchard TWAIN")) || (projectName.contains("Mapper")) || (projectName.contains("Labeler"))){
+            if((projectName.contains("Orchard TWAIN")) || (projectName.contains("Mapper")) || (projectName.contains("Labeler"))){
                 subject = projectName + " " + versionNumber + " is now available";
             }else {
                 subject = projectName + " " + versionNumber + projectHelper.checkHotfix(versionNumber) + " is now available";

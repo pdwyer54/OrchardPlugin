@@ -4,10 +4,9 @@
 package com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener;
 
 import com.atlassian.jira.bc.issue.IssueService;
+import com.atlassian.jira.bc.issue.label.LabelService;
 import com.atlassian.jira.bc.project.component.ProjectComponent;
 import com.atlassian.jira.bc.project.component.ProjectComponentManager;
-import com.atlassian.jira.bc.security.login.LoginResult;
-import com.atlassian.jira.bc.security.login.LoginService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.event.type.EventDispatchOption;
 import com.atlassian.jira.exception.CreateException;
@@ -22,9 +21,9 @@ import com.atlassian.jira.project.Project;
 import com.atlassian.jira.project.version.Version;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.user.ApplicationUser;
+import com.atlassian.jira.user.util.UserManager;
 import com.atlassian.jira.util.ErrorCollection;
 import com.orchardsoft.plugin.OrchardPlugin.Debug;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.util.*;
 
@@ -115,7 +114,12 @@ public class ProjectHelper {
 
 		String fieldText = "";
 		debugger.logdebug("getDescriptionCustomField called",className);
-		String description = version.getDescription();
+		String description = "";
+		if(version != null) {
+			if(version.getDescription() != null) {
+				description = version.getDescription();
+			}
+		}
 		String searchKeyword = keyword+":";
 
 		debugger.logdebug(searchKeyword,className);
@@ -397,6 +401,20 @@ public class ProjectHelper {
 
 	}
 
+	public boolean setReporter(Issue issue, ApplicationUser user){
+		MutableIssue mutableIssue = (MutableIssue) issue;
+		boolean success = false;
+
+		mutableIssue.setReporter(user);
+		try{
+			issueManager.updateIssue(user,mutableIssue, EventDispatchOption.ISSUE_UPDATED,false);
+			success = true;
+		}catch (Exception x){
+			debugger.logdebug("There was an error with updating the issue's reporter", className);
+		}
+		return success;
+	}
+
 	public boolean addComponent(Issue issue, String componentToAdd, Long projectID){
 		boolean success = false;
 
@@ -518,6 +536,63 @@ public class ProjectHelper {
 		}
 
 		return issuesInEpic;
+	}
+
+	public void addLabel(Long issueKey,String value){
+		LabelService labelService = null;
+		value=value.replace(" ","_");
+		debugger.logdebug("Attempting to add label: "+value,className);
+
+
+		final ApplicationUser currentUser = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(); // get current user
+		debugger.logdebug("User gotten: "+currentUser.getDisplayName(),className);
+		debugger.logdebug("Attempting to validate label",className);
+		try{
+			debugger.logdebug("Attempting to add label: "+value+" to issue ID: "+issueKey.toString(),className);
+			LabelService.AddLabelValidationResult validationResult = labelService.validateAddLabel(currentUser,issueKey,value);
+			if (validationResult.isValid()){
+				LabelService.LabelsResult result = labelService.addLabel(currentUser,validationResult,false);
+				if (!result.isValid()){
+					debugger.logdebug("Errors in adding label",className);
+					debugger.logdebug(result.getErrorCollection().toString(),className);
+				}
+			}
+		}catch (Exception x){
+			debugger.logdebug("Errors in validating label",className);
+
+		}
+
+
+	}
+
+	public String getIEVersion(Version version){
+
+		String IEVersion = "";
+
+		String projectName = "Interface Engine";
+		String newIE = getDescriptionCustomField("IEExtraVersion1",version);
+		String newIE2 = getDescriptionCustomField("IEExtraVersion2",version);
+		String date = buildDate(version);
+		String versionNumber = version.getName();
+
+		if(!newIE.isEmpty()){
+			newIE = newIE + "." + date;
+		}
+		if(!newIE2.isEmpty()) {
+			newIE2 = newIE2 + "." + date;
+		}
+		if((newIE.isEmpty()) && (newIE2.isEmpty())) {
+			IEVersion = projectName + " " + versionNumber;
+		} else if (newIE2.isEmpty()) {
+			IEVersion = projectName + " " + versionNumber + "/"+ newIE;
+		} else if (newIE.isEmpty()) {
+			IEVersion = projectName + " " + versionNumber + "/"+ newIE2;
+		} else {
+			IEVersion = projectName + " " + versionNumber + "/"+ newIE2 + "/"+ newIE;
+		}
+
+		return IEVersion;
+
 	}
 
 

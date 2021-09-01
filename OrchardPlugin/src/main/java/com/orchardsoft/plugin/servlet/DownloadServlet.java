@@ -44,6 +44,7 @@ public class DownloadServlet extends HttpServlet{
     private static final ProjectHelper projectHelper = new ProjectHelper();
     private static final IssueManager issueManager = ComponentAccessor.getIssueManager();
     private static final VersionManager versionManager = ComponentAccessor.getVersionManager();
+    private static final ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(); // get current user
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -51,7 +52,22 @@ public class DownloadServlet extends HttpServlet{
         isDownload = Boolean.parseBoolean(req.getParameter("isDownload"));
         boolean createReport = true;
         createReport = Boolean.parseBoolean(req.getParameter("createReport"));
-        if (isDownload) {
+        if (isDownload && createReport){
+            String filter = req.getParameter("filter");
+            if (filter != ""){
+                String text = "";
+                ReportingMain report = new ReportingMain();
+                try{
+                    text = report.doReport(filter,false);
+                } catch (JqlParseException e){
+                    debugger.logdebug("Failure in JQL Parse Exception", className);
+                    debugger.logdebug(e.getMessage(), className);
+                }
+
+                resp.setContentType("text");
+                resp.getWriter().write(text);
+            }
+        } else if (isDownload) {
             String version = req.getParameter("version");
             String projectKey = req.getParameter("project");
             String text = "";
@@ -71,7 +87,7 @@ public class DownloadServlet extends HttpServlet{
                 String text = "";
                 ReportingMain report = new ReportingMain();
                 try{
-                    text = report.doReport(filter);
+                    text = report.doReport(filter,true);
                 } catch (JqlParseException e){
                     debugger.logdebug("Failure in JQL Parse Exception", className);
                     debugger.logdebug(e.getMessage(), className);
@@ -81,7 +97,33 @@ public class DownloadServlet extends HttpServlet{
                 resp.getWriter().write(text);
             }
 
-        } else { // Release download, create an epic here for the stuff
+        } else if (false){
+            /**
+             * Summary of "Investigation for COPIA-####"
+             Linked to parent ticket as a sub-task of the parent (new ticket "is sub-task of" parent ticket)
+             Assigned to the same user as the parent ticket
+             Set story points to 5
+             Set sprint as needed
+             Set priority as needed
+             */
+
+            // current user creator
+            // Long 10202, project ID
+            // summary
+            // pass in description
+            // Investigation type = 12703
+            // user of the parent ticket
+            // pass in priority
+            //Issue parentIssue;
+            //String description="";
+
+            //projectHelper.createIssue(user,Long.valueOf(12703),"Investigation of "+parentIssue.getKey(),description,"12703",parentIssue.getAssignee(),12);
+
+
+            // Then fill in the info that is yet to be filled in
+
+        }
+        else { // Release download, create an epic here for the stuff/
             String oldVersion = req.getParameter("oldVersion"); // Hotfix X
             String newVersion = req.getParameter("newVersion"); // 11.X.X
             String projectKey = req.getParameter("project");
@@ -102,7 +144,6 @@ public class DownloadServlet extends HttpServlet{
             SearchService searchService = ComponentAccessor.getComponent(SearchService.class);
             SearchResults searchResults;
             List<Issue> issuesInList = new ArrayList<>();
-            final ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(); // get current user
 
             MessageSet errorMessages = searchService.validateQuery(user, query);
             if (errorMessages.hasAnyErrors()) {
@@ -166,24 +207,28 @@ public class DownloadServlet extends HttpServlet{
 
             if (epicIssue != null) {
                 debugger.logdebug("Epic Issue: " + epicIssue.getKey(), className);
-                issuesInList.clear();
-                query = queryBuilder.JQLReleaseQueryBuilderNotEpic(projectKey, newVersion);
-                errorMessages = searchService.validateQuery(user, query);
 
+                query = queryBuilder.JQLReleaseQueryBuilderNotEpic(projectKey, newVersion);
+                debugger.logdebug("Validate Query call", className);
+                errorMessages = searchService.validateQuery(user, query);
+                List<Issue> issuesInListtoFill = new ArrayList<>();
                 if (errorMessages.hasAnyErrors()) {
                     // Add error logging
                     debugger.logdebug("Failure in Query", className);
                 } else {
                     try {
+                        debugger.logdebug("Attempting to search", className);
                         searchResults = searchService.search(user, query, PagerFilter.getUnlimitedFilter());
-                        issuesInList = searchResults.getResults();
+                        issuesInListtoFill = searchResults.getResults();
 
                     } catch (Exception e) {
+                        debugger.logdebug("Catch hit", className);
                         debugger.logdebug(e.getMessage(), className);
                     }
                 }
                 Collection<Version> listofVersions = new ArrayList<>();
 
+                debugger.logdebug("Creating new epic", className);
                 Issue newEpic = projectHelper.createIssue(user, project.getId(), oldVersion, "Hotfix Epic", IDType, "Development_Team", "3");
                 projectHelper.setSummary(issueManager.getIssueObject(epicIssue.getKey()), newVersion);
                 CustomField customField2 = projectHelper.getCustomFieldObject("Epic Name");
@@ -191,13 +236,14 @@ public class DownloadServlet extends HttpServlet{
                     projectHelper.addCustomFieldValue(issueManager.getIssueObject(epicIssue.getKey()), customField2, newVersion);
                 }
 
-                if (!(issuesInList.isEmpty())) {
+                if (!(issuesInListtoFill.isEmpty())) {
+                    debugger.logdebug("Issues in list not empty", className);
                     CustomField customField = null;
                     Collection<Issue> epicIssues = projectHelper.getIssuesInEpic(epicIssue);
                     customField = projectHelper.getCustomFieldObject("Epic Link");
                     boolean foundVersion = false;
                     if (customField != null) {
-                        for (Issue issue : issuesInList) {
+                        for (Issue issue : issuesInListtoFill) {
                             if (!epicIssues.contains(issue)) {
                                 debugger.logdebug("Issue not in epic, adding: " + issue.getKey(), className);
                                 projectHelper.addCustomFieldValue(issueManager.getIssueObject(issue.getKey()), customField, issueManager.getIssueObject(epicIssue.getKey()));
@@ -232,7 +278,7 @@ public class DownloadServlet extends HttpServlet{
                 }
 
             } else {
-                if (majorVersion) {
+                if (majorVersion & project.getKey().contains("COPIA")){
                     Issue newEpic = projectHelper.createIssue(user, project.getId(), newVersion, "Hotfix Epic", IDType, "Development_Team", "3");
 
                     Version hotfixVersion = null;

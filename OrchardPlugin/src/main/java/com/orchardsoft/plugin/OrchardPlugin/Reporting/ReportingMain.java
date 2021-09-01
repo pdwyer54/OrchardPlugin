@@ -14,6 +14,7 @@ import com.atlassian.query.Query;
 import com.atlassian.jira.jql.parser.JqlQueryParser;
 import com.atlassian.sal.api.user.UserManager;
 import com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener.BuildQuery;
+import com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener.BuildTemplate;
 import com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener.ProjectHelper;
 import com.orchardsoft.plugin.OrchardPlugin.Debug;
 import com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener.SendEmail;
@@ -31,14 +32,13 @@ public class ReportingMain {
     final ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser(); // get current user
     private static DecimalFormat df = new DecimalFormat("0.00");
 
-    public String doReport(String filter) throws JqlParseException {
+    public String doReport(String filter,Boolean getTime) throws JqlParseException {
 
         String finalText = "";
         Query query;
         SearchService searchService = ComponentAccessor.getComponent(SearchService.class);
         SearchResults searchResults;
         List<Issue> issuesInList = new ArrayList<>();
-        ArrayList<Issue> allIssues = new ArrayList<>();
         BuildQuery queryBuilder = new BuildQuery();
 
         List<String> issueTypeFinalList = new ArrayList<>();
@@ -68,51 +68,62 @@ public class ReportingMain {
         }
 
         if (issuesInList.size() > 0){
-            debugger.logdebug("Full list number: "+Integer.toString(issuesInList.size()), className);
-            for (Issue issue : issuesInList){
-                if(issueTypeFinalList.indexOf(issue.getIssueType().getName()) == -1){
-                    issueTypeFinalList.add(issue.getIssueType().getName());
-                    timeTrack.add(Long.valueOf(0));
-                    timeTrackPersonal.add(Long.valueOf(0));
+            if(getTime) {
+                debugger.logdebug("Full list number: " + Integer.toString(issuesInList.size()), className);
+                for (Issue issue : issuesInList) {
+                    if (issueTypeFinalList.indexOf(issue.getIssueType().getName()) == -1) {
+                        issueTypeFinalList.add(issue.getIssueType().getName());
+                        timeTrack.add(Long.valueOf(0));
+                        timeTrackPersonal.add(Long.valueOf(0));
 
+                    }
+                }
+                List<Issue> checkedIssues = new ArrayList<>();
+                for (Issue issue : issuesInList) {
+                    findTimeIssue(issue, issueTypeFinalList, timeTrack, checkedIssues, timeTrackPersonal);
+                }
+            } else { // Get the release notes instead
+                BuildTemplate buildTemplate = new BuildTemplate();
+                Issue firstIssue = issuesInList.get(0);
+                ArrayList<Issue> list = new ArrayList<>();
+                if (!issuesInList.isEmpty()) {
+                    list.addAll(issuesInList);
+                    finalText = buildTemplate.getTemplate(list,firstIssue.getProjectObject(),null,"ReleaseNotesHTML.vm");
                 }
             }
-            List<Issue> checkedIssues = new ArrayList<>();
-            for (Issue issue : issuesInList){
-                findTimeIssue(issue,issueTypeFinalList,timeTrack,checkedIssues, timeTrackPersonal);
-            }
-
         } else {
             debugger.logdebug("No issues in list",className);
         }
 
-        if (issuesInList.size() > 0) {
-            finalText = "Total time spent:\r\n";
-        } else{
-            finalText = "Result set too large";
-        }
+        if(getTime) {
+            if (issuesInList.size() > 0) {
+                finalText = "Total time spent:\r\n";
+            } else {
+                finalText = "Result set too large";
+            }
 
-        double hours;
-        for(int i = 0; i < issueTypeFinalList.size(); i++){
-            debugger.logdebug("Total time: "+String.valueOf(timeTrack.get(i)),className);
-            hours = (timeTrack.get(i).doubleValue() / 3600);
-            debugger.logdebug("Hours: "+String.valueOf(hours),className);
-            String time = String.valueOf(df.format(hours));
-            finalText = finalText + issueTypeFinalList.get(i)+": "+ time +"h \r\n";
-        }
-        if (issuesInList.size() > 0) {
-            finalText = finalText + "\r\n\r\n";
-            finalText = finalText + "Personal time spent for: " + user.getDisplayName() + "\r\n";
-        }
+            double hours;
+            for (int i = 0; i < issueTypeFinalList.size(); i++) {
+                debugger.logdebug("Total time: " + String.valueOf(timeTrack.get(i)), className);
+                hours = (timeTrack.get(i).doubleValue() / 3600);
+                debugger.logdebug("Hours: " + String.valueOf(hours), className);
+                String time = String.valueOf(df.format(hours));
+                finalText = finalText + issueTypeFinalList.get(i) + ": " + time + "h \r\n";
+            }
+            if (issuesInList.size() > 0) {
+                finalText = finalText + "\r\n\r\n";
+                finalText = finalText + "Personal time spent for: " + user.getDisplayName() + "\r\n";
+            }
 
-        for(int i = 0; i < issueTypeFinalList.size(); i++){
-            debugger.logdebug("Total personal time: "+String.valueOf(timeTrackPersonal.get(i)),className);
-            hours = (timeTrackPersonal.get(i).doubleValue() / 3600);
-            debugger.logdebug("Hours: "+String.valueOf(hours),className);
-            String time = String.valueOf(df.format(hours));
-            finalText = finalText + issueTypeFinalList.get(i)+": "+ time +"h \r\n";
-        }
+            for (int i = 0; i < issueTypeFinalList.size(); i++) {
+                debugger.logdebug("Total personal time: " + String.valueOf(timeTrackPersonal.get(i)), className);
+                hours = (timeTrackPersonal.get(i).doubleValue() / 3600);
+                debugger.logdebug("Hours: " + String.valueOf(hours), className);
+                String time = String.valueOf(df.format(hours));
+                finalText = finalText + issueTypeFinalList.get(i) + ": " + time + "h \r\n";
+            }
 
+        }
         return finalText;
     }
 

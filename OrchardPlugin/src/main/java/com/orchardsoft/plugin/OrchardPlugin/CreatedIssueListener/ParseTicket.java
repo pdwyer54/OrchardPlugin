@@ -1,5 +1,6 @@
 package com.orchardsoft.plugin.OrchardPlugin.CreatedIssueListener;
 
+import com.atlassian.jira.bc.user.search.UserSearchService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.exception.DataAccessException;
 import com.atlassian.jira.issue.Issue;
@@ -35,6 +36,24 @@ public class ParseTicket {
         String[] linesplit = line.split(Pattern.quote("*"));
         if (linesplit.length >= 2){
             parsedLine = linesplit[1];
+            parsedLine = parsedLine.trim();
+            debugger.logdebug("Parsed line: "+parsedLine,className);
+        } else {
+            debugger.logdebug("There was an issue with splitting this line: "+line,className);
+        }
+
+        return parsedLine;
+    }
+
+    // Method to actually parse the line, it is supposed to look like this:
+    // Requester's Email * pdwyer
+    // We split on the * and get the the option here
+    public String parseLineGetOption(String line){
+        debugger.logdebug("Parse Line (get Option): "+line,className);
+        String parsedLine = "";
+        String[] linesplit = line.split(Pattern.quote("*"));
+        if (linesplit.length >= 2){
+            parsedLine = linesplit[0]; // Main difference, just get the first string which is the option and not the value
             parsedLine = parsedLine.trim();
             debugger.logdebug("Parsed line: "+parsedLine,className);
         } else {
@@ -101,6 +120,32 @@ public class ParseTicket {
         }
 
         return valid;
+    }
+
+    // We are assuming name is a full name with 2 words, if it's a 3 word name this will not work
+    public ApplicationUser getUserFromName(String name){
+        ApplicationUser user = null;
+        String[] names = name.split("\\s+");
+
+        String firstName = names[0];
+        String lastName = names[1];
+
+        char firstLetter = firstName.charAt(0); // Emails are basically built with the first letter and last name
+        debugger.logdebug("username we are trying to use: "+firstLetter+lastName,className);
+        user = userManager.getUserByNameEvenWhenUnknown(firstLetter+lastName);
+
+        if(user == null){
+            UserSearchService userSearchService = null;
+            Iterable<ApplicationUser> userList = userSearchService.findUsersByFullName(name);
+            for(ApplicationUser users : userList){
+                user = users; // Grab the first one, if we ever have a duplicate name we will deal with it then
+            }
+            if(user == null) {
+                debugger.logdebug("User couldn't be found. Name passed in: " + name, className);
+            }
+        }
+
+        return user;
     }
 
 }

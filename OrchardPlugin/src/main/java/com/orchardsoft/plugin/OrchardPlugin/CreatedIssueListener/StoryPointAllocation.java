@@ -3,15 +3,20 @@ package com.orchardsoft.plugin.OrchardPlugin.CreatedIssueListener;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.issue.Issue;
 import com.atlassian.jira.issue.IssueManager;
+import com.atlassian.jira.issue.MutableIssue;
 import com.atlassian.jira.issue.fields.CustomField;
+import com.atlassian.jira.issue.issuetype.IssueType;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.user.util.UserManager;
+import com.atlassian.jira.issue.customfields.option.*;
 import com.orchardsoft.plugin.OrchardPlugin.Debug;
 import com.orchardsoft.plugin.OrchardPlugin.ReleaseNotesListener.ProjectHelper;
 
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class StoryPointAllocation {
 
@@ -38,30 +43,75 @@ public class StoryPointAllocation {
         return storyPoints;
     }
 
+    private Boolean checkTestingTask(Issue issue){
+        Boolean isTestingTask;
+        IssueType issueType = issue.getIssueType();
+
+        if(issueType.getName().contains("Testing Task")){
+            isTestingTask = true;
+        } else {
+            isTestingTask = false;
+        }
+        return isTestingTask;
+    }
+
+    private Double GetTestStoryPointsFromComplexity(Issue issue){
+        Double storyPoints = 0.0;
+        CustomField CFStoryPoints = projectHelper.getCustomFieldObject("Testing Complexity");
+        debugger.logdebug("Calling GetTestStoryPointsFromComplexity",className);
+
+        if(CFStoryPoints == null){
+            debugger.logdebug("Testing Complexity custom field was null?",className);
+        } else {
+            debugger.logdebug("Issue for testing complex: "+issue.getKey(),className);
+        }
+        Object storyPointObj = issue.getCustomFieldValue(CFStoryPoints);
+        if (storyPointObj != null) {
+
+            debugger.logdebug("Attempting to get Testing Complexity Val",className);
+            debugger.logdebug(storyPointObj.toString(),className);
+            storyPoints = Double.valueOf(storyPointObj.toString());
+        } else {
+            debugger.logdebug("storyPointObj was null",className);
+        }
+
+
+
+        return storyPoints;
+    }
+
+
     private Double addStoryPoints(Double total, Double points){
       Double finalTotal = total + points;
       return finalTotal;
     }
 
     public void HarvestPointAllocation(Issue issue){
+        debugger.logdebug("Starting Harvest Point Allocation",className);
         StoryPointObject storyPoints = new StoryPointObject(issue);
         if ((storyPoints.epic != null) & (storyPoints.isEpic)){
             debugger.logdebug("Epic Issue: " + storyPoints.epic.getKey(), className);
             Collection<Issue> IssuesinCollection = projectHelper.getIssuesInEpic(storyPoints.epic);
             Double storyPointsAmount = 0.0;
+            Double testingStoryPointsAmount = 0.0;
             ArrayList<String> completedIssues = new ArrayList<String>();
             for (Issue subIssue : IssuesinCollection) {
                 storyPoints.clearFeatureSP();
                 debugger.logdebug("Epic Sub-Issue: " + subIssue.getKey(), className);
                 storyPointsAmount = GetStoryPointsFromIssue(subIssue);
+                testingStoryPointsAmount = GetTestStoryPointsFromComplexity(subIssue);
                 storyPoints.FeatureSPTotal = storyPointsAmount;
+                storyPoints.TestStoryPointsTotal = testingStoryPointsAmount;
                 if (projectHelper.isResolved(subIssue)) {
                     storyPoints.FeatureSPComplete = storyPointsAmount;
+                    storyPoints.TestStoryPointsCompleted = testingStoryPointsAmount;
                 }
+
 
                 if (storyPoints.feature != null) {
                     if (subIssue.getKey() == storyPoints.feature.getKey() & (completedIssues.indexOf(subIssue) < 0)) {
-                        storyPoints.applyStoryPointstoIssue(2,subIssue);
+                        storyPoints.applyStoryPointstoIssue(2,subIssue,true);
+
                     }
                 } else if (storyPoints.isEpic) {
                     debugger.logdebug("Index of " + String.valueOf(completedIssues.indexOf(subIssue.getKey())), className);
@@ -70,15 +120,21 @@ public class StoryPointAllocation {
                             debugger.logdebug("Issue being updated: " + subIssue.getKey(), className);
                             debugger.logdebug("FeatureSPTotal: " + storyPoints.FeatureSPTotal.toString(), className);
                             debugger.logdebug("FeatureSPComplete: " + storyPoints.FeatureSPComplete.toString(), className);
-                            storyPoints.applyStoryPointstoIssue(2,subIssue);
+                            storyPoints.applyStoryPointstoIssue(2,subIssue,true);
                         }
                     }
                 }
                 if (completedIssues.indexOf(subIssue.getKey()) == -1) {
+                    //storyPoints.printOutInLog();
                     storyPoints.StoryPointsTotal = addStoryPoints(storyPoints.StoryPointsTotal,storyPoints.FeatureSPTotal);
                     storyPoints.StoryPointsCompleted = addStoryPoints(storyPoints.StoryPointsCompleted,storyPoints.FeatureSPComplete);
+                    storyPoints.StoryPointsTotal = addStoryPoints(storyPoints.StoryPointsTotal,storyPoints.TestStoryPointsTotal);
+                    storyPoints.StoryPointsCompleted = addStoryPoints(storyPoints.StoryPointsCompleted,storyPoints.TestStoryPointsCompleted);
+                    storyPoints.StoryTestPoints = addStoryPoints(storyPoints.StoryTestPoints,storyPoints.TestStoryPointsTotal);
+                    storyPoints.StoryTestPointsCompleted = addStoryPoints(storyPoints.StoryTestPointsCompleted,storyPoints.TestStoryPointsCompleted);
                     debugger.logdebug("CFStoryPointsTotal: " + String.valueOf(storyPoints.StoryPointsTotal), className);
                     debugger.logdebug("CFStoryPointsCompleted:" + String.valueOf(storyPoints.StoryPointsCompleted), className);
+
                 }
 
 
@@ -88,10 +144,10 @@ public class StoryPointAllocation {
                 }
             }
 
-            debugger.logdebug("Adding everything up and puttingin the epic", className);
+            debugger.logdebug("Adding everything up and putting in the epic", className);
             debugger.logdebug("CFStoryPointsTotal: " + String.valueOf(storyPoints.StoryPointsTotal), className);
             debugger.logdebug("CFStoryPointsCompleted:" + String.valueOf(storyPoints.StoryPointsCompleted), className);
-            storyPoints.applyStoryPointstoIssue(1,storyPoints.epic);
+            storyPoints.applyStoryPointstoIssue(1,storyPoints.epic,true);
 
 
         }
@@ -120,9 +176,15 @@ public class StoryPointAllocation {
                             debugger.logdebug("Issue " + linkedSubTasks.getKey() + " was added to list", className);
                             completedIssues.add(linkedSubTasks.getKey());
                             storyPoints.FeatureSPTotal = addStoryPoints(storyPoints.FeatureSPTotal, storyPointsAmount);
+                            if(checkTestingTask(linkedSubTasks)){
+                                storyPoints.TestStoryPointsTotal = addStoryPoints(storyPoints.TestStoryPointsTotal, storyPointsAmount);
+                            }
                             debugger.logdebug("Story Points Total: " + storyPoints.FeatureSPTotal.toString(), className);
                             if (projectHelper.isResolved(linkedSubTasks)) {
                                 storyPoints.FeatureSPComplete = addStoryPoints(storyPoints.FeatureSPComplete, storyPointsAmount);
+                                if(checkTestingTask(linkedSubTasks)) {
+                                    storyPoints.TestStoryPointsCompleted = addStoryPoints(storyPoints.TestStoryPointsCompleted, storyPointsAmount);
+                                }
                                 debugger.logdebug("Story Points Completed: " + storyPoints.FeatureSPComplete.toString(), className);
                             }
                         }
@@ -130,7 +192,7 @@ public class StoryPointAllocation {
                 }
                 if (storyPoints.feature != null) {
                     if (subIssue.getKey() == storyPoints.feature.getKey() & (completedIssues.indexOf(subIssue) < 0)) {
-                        storyPoints.applyStoryPointstoIssue(2,subIssue);
+                        storyPoints.applyStoryPointstoIssue(2,subIssue,true);
                     }
                 } else if (storyPoints.isEpic) {
                     debugger.logdebug("Index of " + String.valueOf(completedIssues.indexOf(subIssue.getKey())), className);
@@ -139,7 +201,7 @@ public class StoryPointAllocation {
                             debugger.logdebug("Issue being updated: " + subIssue.getKey(), className);
                             debugger.logdebug("FeatureSPTotal: " + storyPoints.FeatureSPTotal.toString(), className);
                             debugger.logdebug("FeatureSPComplete: " + storyPoints.FeatureSPComplete.toString(), className);
-                            storyPoints.applyStoryPointstoIssue(2,subIssue);
+                            storyPoints.applyStoryPointstoIssue(2,subIssue,true);
                         }
                     }
                 }
@@ -147,6 +209,10 @@ public class StoryPointAllocation {
                 if (completedIssues.indexOf(subIssue.getKey()) == -1) {
                     storyPoints.StoryPointsTotal = addStoryPoints(storyPoints.StoryPointsTotal,storyPoints.FeatureSPTotal);
                     storyPoints.StoryPointsCompleted = addStoryPoints(storyPoints.StoryPointsCompleted,storyPoints.FeatureSPComplete);
+                    storyPoints.StoryPointsTotal = addStoryPoints(storyPoints.StoryPointsTotal,storyPoints.TestStoryPointsTotal);
+                    storyPoints.StoryPointsCompleted = addStoryPoints(storyPoints.StoryPointsCompleted,storyPoints.TestStoryPointsCompleted);
+                    storyPoints.StoryTestPoints = addStoryPoints(storyPoints.StoryTestPoints,storyPoints.TestStoryPointsTotal);
+                    storyPoints.StoryTestPointsCompleted = addStoryPoints(storyPoints.StoryTestPointsCompleted,storyPoints.TestStoryPointsCompleted);
                     debugger.logdebug("CFStoryPointsTotal: " + String.valueOf(storyPoints.StoryPointsTotal), className);
                     debugger.logdebug("CFStoryPointsCompleted:" + String.valueOf(storyPoints.StoryPointsCompleted), className);
                 }
@@ -171,7 +237,7 @@ public class StoryPointAllocation {
             debugger.logdebug("Adding everything up and putting in the epic", className);
             debugger.logdebug("CFStoryPointsTotal: " + String.valueOf(storyPoints.StoryPointsTotal), className);
             debugger.logdebug("CFStoryPointsCompleted:" + String.valueOf(storyPoints.StoryPointsCompleted), className);
-            storyPoints.applyStoryPointstoIssue(1,storyPoints.epic);
+            storyPoints.applyStoryPointstoIssue(1,storyPoints.epic,true);
         }
     }
 
@@ -217,7 +283,7 @@ public class StoryPointAllocation {
             debugger.logdebug("Adding everything up and putting in the epic", className);
             debugger.logdebug("CFStoryPointsTotal: " + String.valueOf(storyPoints.StoryPointsTotal), className);
             debugger.logdebug("CFStoryPointsCompleted:" + String.valueOf(storyPoints.StoryPointsCompleted), className);
-            storyPoints.applyStoryPointstoIssue(1,storyPoints.epic);
+            storyPoints.applyStoryPointstoIssue(1,storyPoints.epic,false);
 
         }
     }

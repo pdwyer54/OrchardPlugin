@@ -62,6 +62,8 @@ public class BuildQuery {
 	}
 
 	public Query JQLReleaseQueryBuilderNotEpic (String projectName, String version){
+		debugger.logdebug("Gathering non-epic issues", className);
+
 		final JqlQueryBuilder builder = JqlQueryBuilder.newBuilder();
 
 

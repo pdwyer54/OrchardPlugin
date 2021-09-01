@@ -67,7 +67,7 @@ function getInfo(strVersion){
         type : "GET",
         url : AJS.params.baseURL+"/plugins/servlet/downloadservlet",
         async : false,
-        data : "version="+strVersion+"&project="+getProject2()+"&isDownload=true&createReport=true",
+        data : "version="+strVersion+"&project="+getProject2()+"&isDownload=true&createReport=false",
         success : function(data) {
             text = data;
         },
@@ -80,23 +80,38 @@ function getInfo(strVersion){
 
 }
 
-function createReport(filter){
+function createReport(filter,isTimeReport){
     // This calls DownloadServlet.java on the server
     // This only have a doGet statement right now so ajax can only use the get command
-
-    var text = '';
-    $.ajax({
-        type : "GET",
-        url : AJS.params.baseURL+"/plugins/servlet/downloadservlet",
-        async : false,
-        data : "filter="+filter+"&isDownload=false&createReport=true",
-        success : function(data) {
-            text = data;
-        },
-        error: function(XMLHttpRequest) {
-            console.log(XMLHttpRequest.responseText);
-        }
-    });
+    if(isTimeReport) {
+        var text = '';
+        $.ajax({
+            type: "GET",
+            url: AJS.params.baseURL + "/plugins/servlet/downloadservlet",
+            async: false,
+            data: "filter=" + filter + "&isDownload=false&createReport=true",
+            success: function (data) {
+                text = data;
+            },
+            error: function (XMLHttpRequest) {
+                console.log(XMLHttpRequest.responseText);
+            }
+        });
+    }else {
+        var text = '';
+        $.ajax({
+            type: "GET",
+            url: AJS.params.baseURL + "/plugins/servlet/downloadservlet",
+            async: false,
+            data: "filter=" + filter + "&isDownload=true&createReport=true",
+            success: function (data) {
+                text = data;
+            },
+            error: function (XMLHttpRequest) {
+                console.log(XMLHttpRequest.responseText);
+            }
+        });
+    }
 
     return text;
 
@@ -119,10 +134,10 @@ function sendDownload(filename, version) {
     document.body.removeChild(element);
 }
 
-function getReport(filename, filter) {
+function getReport(filename, filter,isTimeReport) {
 
     // This method creates an element that then is used to send a download to the user
-    var text = createReport(filter);
+    var text = createReport(filter,isTimeReport);
 
     var element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
@@ -175,9 +190,16 @@ AJS.toInit(function(jQuery){
         if (e.which == 17){
             isCtrl = true;
         }
-        if (e.which == 16){
+        else if (e.which == 16){
             isShift = true;
+        } else if(e.which == 190  || e.which == 76 || e.which == 191){
+// Ignore
+        } else{
+            isCtrl = false;
+            isShift = false;
         }
+
+
             // ctrl-shift-.
         if (isCtrl && isShift && e.which == 190 && checkProject2()){
             console.log("Triggering ctrl-shift-.");
@@ -198,7 +220,13 @@ AJS.toInit(function(jQuery){
                 var filter = $("#advanced-search").val()
                 console.log("Filter: "+filter);
                 var today = new Date();
-                    getReport("Time logged Report " + today.toDateString() + ".txt", filter);
+                    getReport("Time logged Report " + today.toDateString() + ".txt", filter,true);
+            }
+        } else if (isCtrl && isShift && e.which == 191) {
+            if (isFilter()) {
+                var filter = $("#advanced-search").val()
+                console.log("Filter: " + filter);
+                getReport("Filter Release Notes.txt", filter,false)
             }
         }
     })

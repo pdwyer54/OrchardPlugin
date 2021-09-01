@@ -32,8 +32,10 @@ public class BuildTemplate {
         CustomFieldManager customFieldManager = ComponentAccessor.getCustomFieldManager();
         ArrayList<TemplateObject> templateObjectArrayList = new ArrayList<TemplateObject>();
         String versionDescription = "";
-        if(version.getDescription() != null){
-            versionDescription = version.getDescription();
+        if(version != null){
+            if(version.getDescription() != null){
+                versionDescription = version.getDescription();
+            }
         }
 
         // TODO: Rework this to use the common method in ProjectHelper for getting custom fields
@@ -209,8 +211,10 @@ public class BuildTemplate {
         String path = baseURL+"/download/resources/com.orchardsoft.plugin.OrchardPlugin:OrchardPlugin-resources/images/";
 
         String versionDescription = "";
-        if(version.getDescription() != null){
-            versionDescription = version.getDescription();
+        if (version != null){
+            if(version.getDescription() != null){
+                versionDescription = version.getDescription();
+            }
         }
 
         if(projectKey.contains("HARVEST")) {
@@ -281,8 +285,10 @@ public class BuildTemplate {
         ProjectHelper projectHelper = new ProjectHelper();
 
         String versionDescription = "";
-        if(version.getDescription() != null){
-            versionDescription = version.getDescription();
+        if(version != null) {
+            if (version.getDescription() != null) {
+                versionDescription = version.getDescription();
+            }
         }
 
         if(projectKey.contains("HARVEST")) {
@@ -296,7 +302,7 @@ public class BuildTemplate {
             returnText = "Warning: Make sure you have a backup of the client database before you update their system.";
 
         } else if(projectKey.contains("IE")) {
-            returnText = "Version "+version.getName()+" of the Harvest Interface Engine is now available on the ORC.";
+            returnText = projectHelper.getIEVersion(version)+" is now available on the ORC.";
 
         } else if(projectKey.contains("OC")) {
             //extraText = projectHelper.getProjectCustomField("Version",project);

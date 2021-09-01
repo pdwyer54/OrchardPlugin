@@ -2,6 +2,7 @@ package com.orchardsoft.plugin.OrchardPlugin.CreatedIssueListener;
 
 import com.atlassian.event.api.EventListener;
 import com.atlassian.event.api.EventPublisher;
+import com.atlassian.jira.bc.issue.label.LabelService;
 import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.event.type.EventDispatchOption;
 import com.atlassian.jira.exception.RemoveException;
@@ -221,6 +222,48 @@ public class TriggerCreateListener implements InitializingBean, DisposableBean {
                     }*/
                 } else {
                     debugger.logdebug("Issue summary does not start with Test: " + issue.getSummary(), className);
+                }
+            } else if (project.getKey().contains("INSTSPEC")){
+                if (issue.getSummary().matches("^Spec Review: .*")) { // Has to match what we expect
+                    // All the info we need is in the description seperated by carriage returns, split based on that
+                    String fullText = issue.getDescription();
+                    String[] lines = fullText.split("\\r?\\n");
+
+                    ParseTicket parseTicket = new ParseTicket();
+                    ApplicationUser user = userManager.getUserByNameEvenWhenUnknown("Wufoo");
+                    JiraAuthenticationContext jiraAuthenticationContext = ComponentAccessor.getJiraAuthenticationContext();
+                    if (user != null) {
+                        debugger.logdebug("Setting the user to Wufoo to avoid an error",className);
+                        jiraAuthenticationContext.setLoggedInUser(user);
+                    }
+                    for (int i = 0; i < lines.length; i++) {
+                        String option = parseTicket.parseLineGetOption(lines[i]);
+                        String line = parseTicket.parseLine(lines[i]);
+                        debugger.logdebug("Option: "+option,className);
+                        if (option.contains("Product")) {
+                            debugger.logdebug("Product Label",className);
+                            projectHelper.addLabel(issue.getId(), line);
+                        } else if (option.contains("Client ID")) {
+                            debugger.logdebug("Client ID set",className);
+                            CustomField ClientID = null;
+                            ClientID = projectHelper.getCustomFieldObject("Client ID");
+                            projectHelper.addCustomFieldValue(issue, ClientID, line);
+                        } else if (option.contains("Requesting Employee")) {
+                            debugger.logdebug("Set Reporter",className);
+                            ApplicationUser Reportuser = parseTicket.getUserFromName(line);
+                            if (user != null){
+                                projectHelper.setReporter(issue,Reportuser);
+                            }
+                        } else if (option.contains("Client, Client Aftermarket, or Prospect?")) {
+                            debugger.logdebug("New Label",className);
+                            projectHelper.addLabel(issue.getId(), line);
+                        }
+
+                    }
+                    // Reset the user after we are done
+                    if (user != null) {
+                        jiraAuthenticationContext.setLoggedInUser(null);
+                    }
                 }
             }
 

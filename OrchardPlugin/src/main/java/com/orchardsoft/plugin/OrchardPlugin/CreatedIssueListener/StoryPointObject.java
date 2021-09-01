@@ -24,6 +24,10 @@ public class StoryPointObject {
     public Double StoryPointsCompleted;
     public Double FeatureSPTotal;
     public Double FeatureSPComplete;
+    public Double TestStoryPointsTotal;
+    public Double TestStoryPointsCompleted;
+    public Double StoryTestPoints;
+    public Double StoryTestPointsCompleted;
     public ArrayList<String> IssuesChecked;
 
     public StoryPointObject(Issue issue){
@@ -62,8 +66,12 @@ public class StoryPointObject {
         isEpic = epicExists;
         StoryPointsTotal = 0.0;
         StoryPointsCompleted = 0.0;
+        TestStoryPointsTotal = 0.0;
+        TestStoryPointsCompleted = 0.0;
         FeatureSPTotal = 0.0;
         FeatureSPComplete = 0.0;
+        StoryTestPoints = 0.0;
+        StoryTestPointsCompleted = 0.0;
         IssuesChecked = new ArrayList<String>();
     }
 
@@ -104,8 +112,12 @@ public class StoryPointObject {
         isEpic = componentExists;
         StoryPointsTotal = 0.0;
         StoryPointsCompleted = 0.0;
+        TestStoryPointsTotal = 0.0;
+        TestStoryPointsCompleted = 0.0;
         FeatureSPTotal = 0.0;
         FeatureSPComplete = 0.0;
+        StoryTestPoints = 0.0;
+        StoryTestPointsCompleted = 0.0;
         IssuesChecked = new ArrayList<String>();
 
     }
@@ -117,27 +129,47 @@ public class StoryPointObject {
         isEpic = false;
         StoryPointsTotal = 0.0;
         StoryPointsCompleted = 0.0;
+        TestStoryPointsTotal = 0.0;
+        TestStoryPointsCompleted = 0.0;
         FeatureSPTotal = 0.0;
         FeatureSPComplete = 0.0;
+        StoryTestPoints = 0.0;
+        StoryTestPointsCompleted = 0.0;
         IssuesChecked = new ArrayList<String>();
     }
 
     public void clearFeatureSP(){
         FeatureSPComplete = 0.0;
         FeatureSPTotal = 0.0;
+        TestStoryPointsTotal = 0.0;
+        TestStoryPointsCompleted = 0.0;
     }
 
     public void clearOverallSP(){
         StoryPointsCompleted = 0.0;
         StoryPointsTotal = 0.0;
+        StoryTestPoints = 0.0;
+        StoryTestPointsCompleted = 0.0;
     }
 
     public String getStringFromDoubleFSPT(){
         return String.valueOf(FeatureSPTotal);
     }
 
+    public String getStringFromDoubleFComSPT(){
+        return String.valueOf(FeatureSPTotal);
+    }
+
     public String getStringFromDoubleSPT(){
         return String.valueOf(StoryPointsTotal);
+    }
+
+    public String getStringFromDoubleTestSPT(){
+        return String.valueOf(TestStoryPointsTotal);
+    }
+
+    public String getStringFromDoubleTestComSPT(){
+        return String.valueOf(TestStoryPointsTotal);
     }
 
     public void addToIssuesChecked(Issue issue){
@@ -156,7 +188,7 @@ public class StoryPointObject {
         }
     }
 
-    public void applyStoryPointstoIssue(long type, Issue issue){
+    public void applyStoryPointstoIssue(long type, Issue issue,boolean applyToTest){
         CustomField CFStoryPointsTotal = projectHelper.getCustomFieldObject("Epic Story Points");
         CustomField CFStoryPointsCompleted = projectHelper.getCustomFieldObject("Epic Story Points Completed");
         CustomField CFStoryPointsPercent = projectHelper.getCustomFieldObject("Aha Story Points Percentage");
@@ -171,6 +203,25 @@ public class StoryPointObject {
             total = FeatureSPTotal;
             completed = FeatureSPComplete;
         }
+         // Add to test if need be as well
+        if(applyToTest){
+            Double testTotal = 0.0;
+            Double testCompleted = 0.0;
+
+            CustomField TestCFStoryPointsTotal = projectHelper.getCustomFieldObject("Testing Points");
+            CustomField TestCFStoryPointsCompleted = projectHelper.getCustomFieldObject("Testing Points Completed");
+            CustomField TestCFStoryPointsPercent = projectHelper.getCustomFieldObject("Testing Points Percentage");
+
+            if(type == 1) { // Total
+                projectHelper.addCustomFieldValue(issue, TestCFStoryPointsTotal, StoryTestPoints);
+                projectHelper.addCustomFieldValue(issue, TestCFStoryPointsCompleted, StoryTestPointsCompleted);
+                projectHelper.addCustomFieldValue(issue, TestCFStoryPointsPercent, StoryPointPercentage(StoryTestPointsCompleted, StoryTestPoints));
+            } else if (type == 2) {
+                projectHelper.addCustomFieldValue(issue, TestCFStoryPointsTotal, TestStoryPointsTotal);
+                projectHelper.addCustomFieldValue(issue, TestCFStoryPointsCompleted, TestStoryPointsCompleted);
+                projectHelper.addCustomFieldValue(issue, TestCFStoryPointsPercent, StoryPointPercentage(TestStoryPointsCompleted, TestStoryPointsTotal));
+            }
+        }
 
         projectHelper.addCustomFieldValue(issue, CFStoryPointsTotal, total);
         projectHelper.addCustomFieldValue(issue, CFStoryPointsCompleted, completed);
@@ -178,14 +229,19 @@ public class StoryPointObject {
     }
 
     public Double StoryPointPercentage(Double completed,Double total){
-        return (completed/total) * 100;
+        if (total == 0.0){
+            return 0.0;
+        } else {
+            return (completed / total) * 100;
+        }
     }
 
 
 
     public void printOutInLog() {
-        debugger.logdebug("", className);
-        debugger.logdebug("", className);
-        debugger.logdebug("", className);
+        debugger.logdebug("Feature Points: "+getStringFromDoubleFSPT(), className);
+        debugger.logdebug("Testing Points: "+getStringFromDoubleTestSPT(), className);
+        debugger.logdebug("Feature Complete: "+getStringFromDoubleFComSPT(), className);
+        debugger.logdebug("Testing Complete: "+getStringFromDoubleTestComSPT(), className);
     }
 }
